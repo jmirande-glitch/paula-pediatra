@@ -1,0 +1,176 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Pediatría — Dra. Paula Navarro</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Newsreader:ital,opsz,wght@0,6..72,400;0,6..72,500;0,6..72,600;1,6..72,500&family=Inter:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+:root{
+  --paper:#F6F1E7; --paper-2:#EFE6D3; --card:#FFFDF9;
+  --ink:#2B2A25; --ink-soft:#6E6C5E;
+  --jac:#6C5B9C; --jac-deep:#4E3F79; --jac-tint:#EFE9F4;
+  --grid:#DDD3BE; --alert:#C0603F; --alert-tint:#F7E9E3;
+  --radius:18px; --radius-sm:12px; --shadow:0 14px 34px -16px rgba(43,42,37,.28);
+}
+*{box-sizing:border-box;margin:0;padding:0;}
+html{scroll-behavior:smooth;}
+body{font-family:'Inter',sans-serif;background:var(--paper);color:var(--ink);line-height:1.6;-webkit-font-smoothing:antialiased;}
+a{color:inherit;text-decoration:none;}
+img,svg{max-width:100%;display:block;}
+.wrap{max-width:1080px;margin:0 auto;padding:0 24px;}
+section{padding:72px 0;}
+@media(max-width:720px){section{padding:48px 0;} .wrap{padding:0 20px;}}
+
+.demo-banner{background:var(--jac-deep);color:#fff;text-align:center;font-size:.78rem;font-weight:600;padding:9px 16px;}
+.demo-banner a{text-decoration:underline;}
+
+header{position:sticky;top:0;z-index:50;background:rgba(246,241,231,.94);backdrop-filter:blur(8px);border-bottom:1px solid var(--grid);}
+.nav{display:flex;align-items:center;justify-content:space-between;padding:15px 0;}
+.logo{display:flex;align-items:center;gap:10px;}
+.logo-mark{width:34px;height:34px;border-radius:9px;background:var(--jac);display:flex;align-items:center;justify-content:center;flex-shrink:0;}
+.logo-text{font-family:'Newsreader',serif;font-size:1.02rem;line-height:1.15;}
+.logo-text small{display:block;font-family:'IBM Plex Mono',monospace;font-size:.6rem;letter-spacing:.08em;text-transform:uppercase;color:var(--ink-soft);margin-top:2px;}
+.navlinks{display:flex;gap:10px;align-items:center;font-size:.86rem;}
+.btn{display:inline-flex;align-items:center;gap:8px;padding:11px 20px;border-radius:100px;font-size:.84rem;font-weight:600;border:1px solid transparent;cursor:pointer;transition:.2s;}
+.btn-primary{background:var(--jac);color:#fff;}
+.btn-primary:hover{background:var(--jac-deep);}
+.btn-ghost{border-color:var(--ink);color:var(--ink);}
+.btn-ghost:hover{background:var(--ink);color:var(--paper);}
+
+.hero{padding-top:56px;padding-bottom:20px;}
+.hero h1{font-family:'Newsreader',serif;font-weight:500;font-size:clamp(1.9rem,4vw,2.7rem);line-height:1.2;margin-bottom:16px;max-width:22ch;}
+.hero h1 em{font-style:italic;color:var(--jac-deep);}
+.hero p{font-size:1.02rem;color:var(--ink-soft);max-width:48ch;margin-bottom:26px;}
+.hero-ctas{display:flex;gap:12px;flex-wrap:wrap;}
+
+.alert-banner{background:var(--alert-tint);border:1px solid #E7C3B2;border-radius:var(--radius);padding:20px 24px;display:flex;gap:14px;align-items:flex-start;}
+.alert-banner .ic{width:32px;height:32px;border-radius:9px;background:var(--alert);flex-shrink:0;display:flex;align-items:center;justify-content:center;}
+.alert-banner b{display:block;font-family:'Newsreader',serif;font-size:1rem;margin-bottom:3px;}
+.alert-banner p{font-size:.86rem;color:var(--ink-soft);}
+
+.section-head{max-width:56ch;margin-bottom:34px;}
+.section-head h2{font-family:'Newsreader',serif;font-weight:500;font-size:clamp(1.4rem,2.6vw,1.8rem);margin-bottom:8px;}
+.section-head p{color:var(--ink-soft);font-size:.92rem;}
+
+.cards{display:grid;grid-template-columns:repeat(3,1fr);gap:18px;}
+@media(max-width:820px){.cards{grid-template-columns:1fr;}}
+.res-card{background:var(--card);border:1px solid var(--grid);border-radius:var(--radius);padding:22px;}
+.res-tag{font-family:'IBM Plex Mono',monospace;font-size:.66rem;letter-spacing:.05em;color:var(--jac-deep);background:var(--jac-tint);display:inline-block;padding:4px 10px;border-radius:100px;margin-bottom:12px;}
+.res-card h3{font-family:'Newsreader',serif;font-weight:500;font-size:1.05rem;margin-bottom:6px;}
+.res-card p{font-size:.86rem;color:var(--ink-soft);}
+
+.turno-card{background:var(--card);border:1px solid var(--grid);border-radius:var(--radius);overflow:hidden;}
+.turno-card-head{padding:16px 20px;border-bottom:1px solid var(--grid);font-size:.85rem;color:var(--ink-soft);}
+.turno-frame-wrap{background:var(--paper-2);}
+.turno-frame-wrap iframe{width:100%;height:480px;border:0;display:block;}
+.turno-fallback{padding:14px 20px;font-size:.78rem;color:var(--ink-soft);border-top:1px solid var(--grid);}
+.turno-fallback a{color:var(--jac-deep);font-weight:600;}
+
+.access-grid{display:grid;grid-template-columns:1fr 1fr;gap:18px;}
+@media(max-width:720px){.access-grid{grid-template-columns:1fr;}}
+.access-card{background:var(--card);border:1px solid var(--grid);border-radius:var(--radius);padding:26px;}
+.access-card h3{font-family:'Newsreader',serif;font-weight:500;font-size:1.1rem;margin-bottom:8px;}
+.access-card p{font-size:.86rem;color:var(--ink-soft);margin-bottom:18px;}
+
+footer{padding:36px 0;border-top:1px solid var(--grid);}
+footer .wrap{display:flex;justify-content:space-between;flex-wrap:wrap;gap:12px;font-size:.76rem;color:var(--ink-soft);}
+footer a{color:var(--ink-soft);}
+footer a:hover{color:var(--jac-deep);}
+</style>
+</head>
+<body>
+
+<div class="demo-banner">Versión de prueba — datos ficticios, todavía no conectado a Quality ni a Supabase</div>
+
+<header>
+  <div class="wrap nav">
+    <div class="logo">
+      <div class="logo-mark"><svg width="18" height="18" viewBox="0 0 20 20" fill="none"><path d="M2 15 C 6 15, 6 6, 10 8 C 14 10, 14 3, 18 3" stroke="#fff" stroke-width="1.7" stroke-linecap="round"/></svg></div>
+      <div class="logo-text">Paula Navarro<small>Pediatría · Yerba Buena</small></div>
+    </div>
+    <nav class="navlinks">
+      <a class="btn btn-ghost" href="portal.html">Portal familiar</a>
+      <a class="btn btn-primary" href="#turno">Reservar turno</a>
+    </nav>
+  </div>
+</header>
+
+<section class="hero">
+  <div class="wrap">
+    <h1>Recursos y turnos para las familias que <em>ya atiendo</em>.</h1>
+    <p>Alertas de temporada, guías por edad, y un portal para llevar el control de tus hijos sin depender de un mensaje a las 11 de la noche.</p>
+    <div class="hero-ctas">
+      <a class="btn btn-primary" href="portal.html">Ingresar al portal familiar</a>
+      <a class="btn btn-ghost" href="#turno">Reservar turno</a>
+    </div>
+  </div>
+</section>
+
+<section id="alertas">
+  <div class="wrap">
+    <div class="alert-banner">
+      <div class="ic"><svg width="15" height="15" viewBox="0 0 16 16" fill="none"><path d="M8 1v8m0 4v.01" stroke="#fff" stroke-width="1.8" stroke-linecap="round"/></svg></div>
+      <div><b>Temporada de bronquiolitis — mayo a agosto</b><p>Dificultad para respirar, rechazo del pecho o mamadera, o decaimiento marcado son señales para consultar antes de esperar el turno programado.</p></div>
+    </div>
+  </div>
+</section>
+
+<section id="recursos">
+  <div class="wrap">
+    <div class="section-head">
+      <h2>Recursos por etapa</h2>
+      <p>Lo que normalmente se pregunta por WhatsApp entre consulta y consulta.</p>
+    </div>
+    <div class="cards">
+      <div class="res-card"><span class="res-tag">Fiebre</span><h3>Mi hijo tiene fiebre, ¿qué hago primero?</h3><p>Qué observar antes de la medicación, y qué anotar para la consulta.</p></div>
+      <div class="res-card"><span class="res-tag">Alimentación</span><h3>"No quiere comer nada" — qué es esperable</h3><p>Casi nunca es motivo de alarma. Te contamos cuándo sí.</p></div>
+      <div class="res-card"><span class="res-tag">Vacunas</span><h3>Calendario de vacunación</h3><p>Qué corresponde a cada edad y qué llevar a la ficha de inicio de año.</p></div>
+    </div>
+  </div>
+</section>
+
+<section id="turno">
+  <div class="wrap">
+    <div class="section-head">
+      <h2>Reservar turno</h2>
+      <p>Se agenda directo en Quality — no duplicamos calendario.</p>
+    </div>
+    <div class="turno-card">
+      <div class="turno-card-head">Turnero de Quality Consultorios</div>
+      <div class="turno-frame-wrap">
+        <iframe src="https://qualitycm.com.ar/login?returnTo=/agendar-cita" title="Turnero Quality" loading="lazy"></iframe>
+      </div>
+      <div class="turno-fallback">¿No carga el calendario? <a href="https://qualitycm.com.ar/login?returnTo=/agendar-cita" target="_blank" rel="noopener">Abrilo directo en Quality ↗</a></div>
+    </div>
+  </div>
+</section>
+
+<section id="accesos">
+  <div class="wrap">
+    <div class="access-grid">
+      <div class="access-card">
+        <h3>¿Sos paciente?</h3>
+        <p>Entrá al portal familiar para ver el control de tus hijos, dejar notas para la consulta y subir estudios.</p>
+        <a class="btn btn-primary" href="portal.html">Ingresar al portal</a>
+      </div>
+      <div class="access-card">
+        <h3>Equipo médico</h3>
+        <p>Acceso para Paula — gestión de pacientes, indicaciones, alertas y estadísticas.</p>
+        <a class="btn btn-ghost" href="panel.html">Ir al panel</a>
+      </div>
+    </div>
+  </div>
+</section>
+
+<footer>
+  <div class="wrap">
+    <span>© Dra. Paula Navarro · Pediatra — Yerba Buena, Tucumán</span>
+    <span><a href="panel.html">Equipo médico</a></span>
+  </div>
+</footer>
+
+</body>
+</html>
