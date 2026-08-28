@@ -1,0 +1,572 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Portal familiar — prototipo de pestañas</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Newsreader:ital,opsz,wght@0,6..72,400;0,6..72,500;0,6..72,600;1,6..72,500&family=Inter:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+:root{
+  --paper:#F6F1E7; --paper-2:#EFE6D3; --card:#FFFDF9;
+  --ink:#2B2A25; --ink-soft:#6E6C5E;
+  --jac:#6C5B9C; --jac-deep:#4E3F79; --jac-tint:#EFE9F4;
+  --grid:#DDD3BE;
+  --amarillo:#C9944A; --amarillo-tint:#F6EBD8;
+  --terracota:#B85C3E; --terracota-tint:#F5E2D5;
+  --verde:#5C7F5E; --verde-tint:#E6EEE1;
+  --radius:18px; --radius-sm:12px; --shadow:0 14px 34px -16px rgba(43,42,37,.28);
+}
+*{box-sizing:border-box;margin:0;padding:0;}
+body{font-family:'Inter',sans-serif;background:var(--paper-2);color:var(--ink);line-height:1.5;-webkit-font-smoothing:antialiased;}
+.serif{font-family:'Newsreader',serif;}
+.mono{font-family:'IBM Plex Mono',monospace;}
+a{color:inherit;text-decoration:none;}
+button,input,textarea{font-family:inherit;}
+img,svg{display:block;}
+
+/* app shell — centrado, pensado para celular pero visible en desktop */
+.app{max-width:520px;margin:0 auto;background:var(--paper);min-height:100vh;position:relative;box-shadow:0 0 60px rgba(0,0,0,.06);display:flex;flex-direction:column;}
+
+.topbar{padding:16px 18px 10px;border-bottom:1px solid var(--grid);}
+.tb-row{display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;}
+.tb-title{font-family:'Newsreader',serif;font-size:1.05rem;}
+.tb-title small{display:block;font-family:'IBM Plex Mono',monospace;font-size:.6rem;letter-spacing:.08em;text-transform:uppercase;color:var(--ink-soft);}
+.tb-exit{font-size:.78rem;color:var(--ink-soft);}
+
+.child-switch{display:flex;gap:8px;overflow-x:auto;padding-bottom:2px;}
+.child-pill{display:flex;align-items:center;gap:8px;padding:7px 14px 7px 7px;border-radius:100px;border:1px solid var(--grid);background:var(--card);white-space:nowrap;font-size:.82rem;font-weight:500;color:var(--ink-soft);flex-shrink:0;}
+.child-pill.active{border-color:var(--jac);background:var(--jac-tint);color:var(--jac-deep);font-weight:600;}
+.child-avatar{width:22px;height:22px;border-radius:50%;background:var(--paper-2);display:flex;align-items:center;justify-content:center;font-size:.7rem;}
+.child-pill.active .child-avatar{background:var(--jac);color:#fff;}
+.child-pill.add{border-style:dashed;}
+
+/* contenido */
+.tab-content{flex:1;overflow-y:auto;padding:18px 18px 100px;}
+.tab-panel{display:none;}
+.tab-panel.active{display:block;animation:fade .18s ease;}
+@keyframes fade{from{opacity:0;transform:translateY(4px);} to{opacity:1;transform:translateY(0);}}
+
+h2.panel-title{font-family:'Newsreader',serif;font-weight:500;font-size:1.35rem;margin-bottom:4px;}
+.panel-sub{font-size:.84rem;color:var(--ink-soft);margin-bottom:20px;}
+
+/* segmentado Resumen / Estadísticas (autogestión — vive dentro de la pestaña Hijos) */
+.segmented{display:flex;background:var(--paper-2);border-radius:100px;padding:3px;margin-bottom:18px;}
+.segmented button{flex:1;border:none;background:transparent;padding:9px;border-radius:100px;font-size:.8rem;font-weight:600;color:var(--ink-soft);cursor:pointer;}
+.segmented button.active{background:var(--card);color:var(--ink);box-shadow:0 2px 6px rgba(0,0,0,.06);}
+.hijo-subview{display:none;}
+.hijo-subview.active{display:block;}
+
+.stat-block{background:var(--card);border:1px solid var(--grid);border-radius:var(--radius);padding:16px 16px 14px;margin-bottom:14px;}
+.stat-block h3{font-family:'Newsreader',serif;font-weight:500;font-size:.96rem;margin-bottom:12px;}
+.freq-bars{display:flex;align-items:flex-end;gap:9px;height:80px;margin-bottom:9px;}
+.freq-bar-col{flex:1;display:flex;flex-direction:column;align-items:center;gap:5px;height:100%;justify-content:flex-end;}
+.freq-bar{width:100%;background:var(--jac);border-radius:5px 5px 3px 3px;opacity:.85;}
+.freq-bar-col span{font-size:.6rem;color:var(--ink-soft);font-family:'IBM Plex Mono',monospace;}
+.freq-note{font-size:.76rem;color:var(--ink-soft);}
+.freq-note b{color:var(--ink);}
+.rank-row{display:flex;align-items:center;gap:9px;margin-bottom:9px;}
+.rank-row:last-child{margin-bottom:0;}
+.rank-label{width:105px;font-size:.78rem;color:var(--ink);flex-shrink:0;}
+.rank-track{flex:1;height:8px;background:var(--paper-2);border-radius:100px;overflow:hidden;}
+.rank-fill{height:100%;background:var(--terracota);border-radius:100px;}
+.rank-count{font-family:'IBM Plex Mono',monospace;font-size:.68rem;color:var(--ink-soft);width:16px;text-align:right;}
+.ring-row{display:flex;align-items:center;gap:16px;}
+.ring-wrap{position:relative;width:82px;height:82px;flex-shrink:0;}
+.ring-wrap svg{transform:rotate(-90deg);}
+.ring-center{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;}
+.ring-center b{font-family:'Newsreader',serif;font-size:1.02rem;}
+.ring-center span{font-size:.55rem;color:var(--ink-soft);}
+.ring-copy{font-size:.78rem;color:var(--ink-soft);}
+.ring-copy b{color:var(--verde);font-weight:700;}
+
+/* stats + chart (tab hijos) */
+.stats{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:18px;}
+.stat-card{background:var(--card);border:1px solid var(--grid);border-radius:var(--radius-sm);padding:13px 14px;}
+.stat-card .label{font-family:'IBM Plex Mono',monospace;font-size:.62rem;letter-spacing:.04em;text-transform:uppercase;color:var(--ink-soft);margin-bottom:5px;}
+.stat-card .value{font-family:'Newsreader',serif;font-size:1.2rem;}
+.chart-card{background:var(--card);border:1px solid var(--grid);border-radius:var(--radius);padding:16px 16px 6px;margin-bottom:20px;}
+.chart-card h3{font-family:'Newsreader',serif;font-weight:500;font-size:1rem;margin-bottom:8px;}
+.timeline{position:relative;padding-left:24px;}
+.timeline::before{content:'';position:absolute;left:7px;top:4px;bottom:4px;width:2px;background:var(--grid);}
+.t-item{position:relative;padding-bottom:16px;}
+.t-dot{position:absolute;left:-24px;top:2px;width:14px;height:14px;border-radius:50%;background:var(--card);border:2px solid var(--jac);}
+.t-item[data-type="enfermedad"] .t-dot{border-color:var(--terracota);}
+.t-item[data-type="vacuna"] .t-dot{border-color:var(--amarillo);}
+.t-date{font-family:'IBM Plex Mono',monospace;font-size:.66rem;color:var(--ink-soft);margin-bottom:3px;}
+.t-card{background:var(--card);border:1px solid var(--grid);border-radius:var(--radius-sm);padding:11px 13px;}
+.t-card b{font-family:'Newsreader',serif;font-size:.92rem;display:block;margin-bottom:2px;}
+.t-card p{font-size:.8rem;color:var(--ink-soft);}
+.t-tag{display:inline-block;font-size:.6rem;font-weight:700;letter-spacing:.03em;text-transform:uppercase;padding:2px 7px;border-radius:100px;margin-bottom:4px;}
+.t-item[data-type="control"] .t-tag{background:var(--jac-tint);color:var(--jac-deep);}
+.t-item[data-type="enfermedad"] .t-tag{background:var(--terracota-tint);color:var(--terracota);}
+.t-item[data-type="vacuna"] .t-tag{background:var(--amarillo-tint);color:var(--amarillo);}
+
+/* turno */
+.turno-card{background:var(--card);border:1px solid var(--grid);border-radius:var(--radius);overflow:hidden;}
+.turno-card-head{padding:14px 16px;border-bottom:1px solid var(--grid);font-size:.86rem;color:var(--ink-soft);}
+.turno-frame-wrap{background:var(--paper-2);}
+.turno-frame-wrap iframe{width:100%;height:440px;border:0;display:block;}
+.turno-fallback{padding:13px 16px;font-size:.78rem;color:var(--ink-soft);border-top:1px solid var(--grid);}
+.turno-fallback a{color:var(--jac-deep);font-weight:600;}
+
+/* botones + chips genéricos */
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;padding:11px 18px;border-radius:100px;font-size:.84rem;font-weight:600;border:1px solid var(--ink);color:var(--ink);cursor:pointer;background:transparent;}
+.btn:hover{background:var(--ink);color:var(--paper);}
+.btn-primary{background:var(--jac);color:#fff;border-color:var(--jac);}
+.btn-primary:hover{background:var(--jac-deep);border-color:var(--jac-deep);}
+.btn-block{width:100%;}
+.chip-row{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:16px;}
+.chip{border:1px solid var(--grid);background:var(--card);padding:8px 14px;border-radius:100px;font-size:.8rem;font-weight:600;color:var(--ink-soft);cursor:pointer;}
+.chip.on{border-color:var(--jac);background:var(--jac-tint);color:var(--jac-deep);}
+
+/* indicaciones */
+.ind-card{background:var(--card);border:1px solid var(--grid);border-radius:var(--radius-sm);padding:15px 16px;margin-bottom:12px;}
+.ind-card .cat{font-size:.62rem;font-weight:700;text-transform:uppercase;letter-spacing:.04em;color:var(--jac-deep);background:var(--jac-tint);display:inline-block;padding:3px 9px;border-radius:100px;margin-bottom:8px;}
+.ind-card h4{font-family:'Newsreader',serif;font-weight:500;font-size:1rem;margin-bottom:6px;}
+.ind-card .excerpt{font-size:.83rem;color:var(--ink-soft);}
+.ind-card details summary{list-style:none;cursor:pointer;font-size:.78rem;color:var(--jac-deep);font-weight:600;margin-top:8px;}
+.ind-card details summary::-webkit-details-marker{display:none;}
+.ind-card details summary::after{content:'Leer indicación completa →';}
+.ind-card details[open] summary::after{content:'Ocultar ↑';}
+.ind-full{font-size:.85rem;color:var(--ink);margin-top:8px;white-space:pre-line;}
+
+/* notas */
+.notes-empty{text-align:center;padding:40px 20px;color:var(--ink-soft);font-size:.86rem;}
+.note-card{background:var(--card);border:1px solid var(--grid);border-radius:var(--radius-sm);padding:14px 15px;margin-bottom:10px;}
+.note-card .nc-head{display:flex;justify-content:space-between;align-items:baseline;margin-bottom:6px;}
+.note-card .nc-tipo{font-family:'Newsreader',serif;font-size:.98rem;}
+.note-card .nc-fecha{font-family:'IBM Plex Mono',monospace;font-size:.66rem;color:var(--ink-soft);}
+.note-card .nc-resumen{font-size:.82rem;color:var(--ink-soft);}
+.note-card .nc-hijo{display:inline-block;font-size:.65rem;font-weight:700;color:var(--jac-deep);background:var(--jac-tint);padding:2px 8px;border-radius:100px;margin-top:8px;}
+
+.template-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:6px;}
+.template-btn{background:var(--card);border:1px solid var(--grid);border-radius:var(--radius-sm);padding:16px 14px;text-align:left;cursor:pointer;}
+.template-btn:hover{border-color:var(--jac);}
+.template-btn .em{font-size:1.3rem;display:block;margin-bottom:8px;}
+.template-btn b{font-family:'Newsreader',serif;font-size:.95rem;display:block;}
+.template-btn span{font-size:.74rem;color:var(--ink-soft);}
+
+.form-field{margin-bottom:18px;}
+.form-field label{display:block;font-size:.78rem;font-weight:700;color:var(--ink-soft);text-transform:uppercase;letter-spacing:.03em;margin-bottom:9px;}
+textarea.free-text{width:100%;border:1px solid var(--grid);background:var(--card);border-radius:var(--radius-sm);padding:11px 13px;font-size:.86rem;resize:vertical;min-height:60px;}
+.back-link{font-size:.8rem;color:var(--ink-soft);margin-bottom:14px;display:inline-flex;align-items:center;gap:5px;cursor:pointer;}
+
+/* estudios */
+.upload-zone{border:1.5px dashed var(--grid);border-radius:var(--radius);padding:26px 16px;text-align:center;margin-bottom:18px;background:var(--card);}
+.upload-zone p{font-size:.82rem;color:var(--ink-soft);margin-bottom:12px;}
+.file-input{display:none;}
+.study-card{background:var(--card);border:1px solid var(--grid);border-radius:var(--radius-sm);padding:12px 14px;margin-bottom:10px;display:flex;align-items:center;gap:12px;}
+.study-ic{width:36px;height:36px;border-radius:9px;background:var(--jac-tint);display:flex;align-items:center;justify-content:center;flex-shrink:0;}
+.study-info b{font-family:'Newsreader',serif;font-size:.9rem;display:block;}
+.study-info span{font-size:.72rem;color:var(--ink-soft);}
+
+/* bottom nav */
+.bottom-nav{position:sticky;bottom:0;background:rgba(246,241,231,.95);backdrop-filter:blur(10px);border-top:1px solid var(--grid);display:flex;padding:8px 4px calc(8px + env(safe-area-inset-bottom));}
+.nav-btn{flex:1;display:flex;flex-direction:column;align-items:center;gap:4px;padding:6px 2px;background:none;border:none;color:var(--ink-soft);font-size:.64rem;font-weight:600;position:relative;}
+.nav-btn svg{stroke:var(--ink-soft);}
+.nav-btn.active{color:var(--jac-deep);}
+.nav-btn.active svg{stroke:var(--jac-deep);}
+.nav-badge{position:absolute;top:0;right:22%;width:15px;height:15px;border-radius:50%;background:var(--terracota);color:#fff;font-size:.58rem;display:flex;align-items:center;justify-content:center;font-weight:700;}
+</style>
+</head>
+<body>
+
+<div style="background:var(--jac-deep);color:#fff;text-align:center;font-size:.72rem;font-weight:600;padding:7px 12px;">Versión de prueba — datos ficticios</div>
+
+<div class="app">
+
+  <div class="topbar">
+    <div class="tb-row">
+      <div class="tb-title">Portal familiar<small>Familia Demo (ejemplo)</small></div>
+      <div class="tb-exit"><a href="index.html" style="color:inherit;text-decoration:none;">← Inicio</a></div>
+    </div>
+    <div class="child-switch">
+      <div class="child-pill active" data-child="mateo"><span class="child-avatar">M</span> Mateo</div>
+      <div class="child-pill" data-child="delfina"><span class="child-avatar">D</span> Delfina</div>
+      <div class="child-pill add">+ Agregar</div>
+    </div>
+  </div>
+
+  <div class="tab-content">
+
+    <!-- ================= TAB: HIJOS ================= -->
+    <section class="tab-panel active" id="panel-hijos">
+      <h2 class="panel-title">Mateo</h2>
+      <div class="panel-sub">5 años y 3 meses · próximo control 14 de octubre</div>
+
+      <div class="segmented">
+        <button class="active" data-sub="resumen">Resumen</button>
+        <button data-sub="estadisticas">Estadísticas</button>
+      </div>
+
+      <div class="hijo-subview active" id="hijo-sub-resumen">
+        <div class="stats">
+          <div class="stat-card"><div class="label">Percentilo (peso)</div><div class="value">P58</div></div>
+          <div class="stat-card"><div class="label">Vacunas al día</div><div class="value">8 / 8</div></div>
+        </div>
+
+        <div class="chart-card">
+          <h3>Evolución — peso</h3>
+          <svg viewBox="0 0 460 150" width="100%">
+            <path d="M10,40 C 120,35 220,25 450,10 L 450,4 C 220,20 120,28 10,32 Z" fill="#E4DCC7" opacity=".55"/>
+            <path d="M10,130 C 140,118 260,102 450,88 L 450,100 C 260,116 140,128 10,140 Z" fill="#E4DCC7" opacity=".55"/>
+            <path d="M10,118 C 80,100 150,80 220,72 C 300,64 360,50 450,32" fill="none" stroke="#6C5B9C" stroke-width="2.4" stroke-linecap="round"/>
+          </svg>
+        </div>
+
+        <h3 style="font-family:'Newsreader',serif;font-weight:500;font-size:1rem;margin-bottom:12px;">Línea de tiempo</h3>
+        <div class="timeline">
+          <div class="t-item" data-type="control"><div class="t-dot"></div><div class="t-date">15 ago 2026</div><div class="t-card"><span class="t-tag">Control</span><b>Control de rutina</b><p>Peso 19,2 kg · Talla 112 cm.</p></div></div>
+          <div class="t-item" data-type="enfermedad"><div class="t-dot"></div><div class="t-date">2–10 jul 2026</div><div class="t-card"><span class="t-tag">Enfermedad</span><b>Bronquiolitis</b><p>Resuelta en 8 días.</p></div></div>
+          <div class="t-item" data-type="vacuna"><div class="t-dot"></div><div class="t-date">10 jun 2026</div><div class="t-card"><span class="t-tag">Vacuna</span><b>Antigripal</b><p>Sin reacciones.</p></div></div>
+        </div>
+      </div>
+
+      <div class="hijo-subview" id="hijo-sub-estadisticas">
+        <div class="stat-block">
+          <h3>Frecuencia de visitas</h3>
+          <div class="freq-bars">
+            <div class="freq-bar-col"><div class="freq-bar" style="height:55%;background:var(--grid);"></div><span>2022</span></div>
+            <div class="freq-bar-col"><div class="freq-bar" style="height:70%;background:var(--grid);"></div><span>2023</span></div>
+            <div class="freq-bar-col"><div class="freq-bar" style="height:60%;background:var(--grid);"></div><span>2024</span></div>
+            <div class="freq-bar-col"><div class="freq-bar" style="height:85%;background:var(--grid);"></div><span>2025</span></div>
+            <div class="freq-bar-col"><div class="freq-bar" style="height:45%;"></div><span>2026</span></div>
+          </div>
+          <div class="freq-note"><b>4 controles</b> en lo que va de 2026 · promedio histórico: <b>5,2 por año</b></div>
+        </div>
+
+        <div class="stat-block">
+          <h3>Enfermedades más frecuentes</h3>
+          <div class="rank-row"><div class="rank-label">Resfrío común</div><div class="rank-track"><div class="rank-fill" style="width:100%;"></div></div><div class="rank-count">4</div></div>
+          <div class="rank-row"><div class="rank-label">Bronquiolitis</div><div class="rank-track"><div class="rank-fill" style="width:50%;"></div></div><div class="rank-count">2</div></div>
+          <div class="rank-row"><div class="rank-label">Otitis</div><div class="rank-track"><div class="rank-fill" style="width:25%;"></div></div><div class="rank-count">1</div></div>
+          <div class="rank-row"><div class="rank-label">Varicela</div><div class="rank-track"><div class="rank-fill" style="width:25%;"></div></div><div class="rank-count">1</div></div>
+        </div>
+
+        <div class="stat-block">
+          <h3>Días de sanidad — 2026</h3>
+          <div class="ring-row">
+            <div class="ring-wrap">
+              <svg width="82" height="82" viewBox="0 0 96 96">
+                <circle cx="48" cy="48" r="40" fill="none" stroke="#EFE6D3" stroke-width="10"/>
+                <circle cx="48" cy="48" r="40" fill="none" stroke="#5C7F5E" stroke-width="10" stroke-linecap="round" stroke-dasharray="251.2" stroke-dashoffset="19"/>
+              </svg>
+              <div class="ring-center"><b>94%</b><span>sin cuadros</span></div>
+            </div>
+            <div class="ring-copy"><b>226 de 240 días</b> sin ningún episodio registrado desde enero.</div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ================= TAB: TURNO ================= -->
+    <section class="tab-panel" id="panel-turno">
+      <h2 class="panel-title">Sacar turno</h2>
+      <div class="panel-sub">Se agenda directo en el sistema de Quality — no duplicamos calendario.</div>
+      <div class="turno-card">
+        <div class="turno-card-head">Turnero de Quality Consultorios</div>
+        <div class="turno-frame-wrap">
+          <iframe src="https://qualitycm.com.ar/login?returnTo=/agendar-cita" title="Turnero Quality" loading="lazy"></iframe>
+        </div>
+        <div class="turno-fallback">¿No carga el calendario? <a href="https://qualitycm.com.ar/login?returnTo=/agendar-cita" target="_blank" rel="noopener">Abrilo directo en Quality ↗</a></div>
+      </div>
+    </section>
+
+    <!-- ================= TAB: INDICACIONES ================= -->
+    <section class="tab-panel" id="panel-indicaciones">
+      <h2 class="panel-title">Indicaciones prácticas</h2>
+      <div class="panel-sub">Qué hacer en situaciones frecuentes — escrito por Paula.</div>
+
+      <div class="chip-row">
+        <div class="chip on">Todas</div>
+        <div class="chip">Fiebre</div>
+        <div class="chip">Alimentación</div>
+        <div class="chip">Sueño</div>
+        <div class="chip">Golpes y accidentes</div>
+        <div class="chip">Piel</div>
+      </div>
+
+      <div class="ind-card">
+        <span class="cat">Fiebre</span>
+        <h4>Mi hijo tiene fiebre, ¿qué hago primero?</h4>
+        <p class="excerpt">Antes de la medicación, hay dos o tres cosas para observar que ayudan mucho en la consulta.</p>
+        <details><summary></summary><div class="ind-full">Lo primero es no guiarse solo por el número del termómetro, sino por cómo está el chico: ¿juega, decae, come? Anotá la hora en que empezó y si hay otros síntomas asociados (tos, dolor de oído, erupción). Eso es justo lo que después registrás en "Anotaciones para consulta", así llegás con todo ordenado.</div></details>
+      </div>
+
+      <div class="ind-card">
+        <span class="cat">Golpes y accidentes</span>
+        <h4>Se golpeó la cabeza — señales para ir a la guardia ya</h4>
+        <p class="excerpt">La mayoría de los golpes no son graves, pero hay señales puntuales que no esperan a un turno.</p>
+        <details><summary></summary><div class="ind-full">Consultá de inmediato si hay pérdida de conocimiento (aunque sea breve), vómitos repetidos, mucha somnolencia o si un ojo se ve distinto al otro. Si nada de eso pasa, observalo con tranquilidad las siguientes horas.</div></details>
+      </div>
+
+      <div class="ind-card">
+        <span class="cat">Alimentación</span>
+        <h4>"No quiere comer nada" — qué es esperable</h4>
+        <p class="excerpt">Es una de las consultas más frecuentes en el consultorio, y casi nunca es motivo de alarma.</p>
+        <details><summary></summary><div class="ind-full">El apetito varía mucho semana a semana, sobre todo entre el año y los tres años. Mientras crezca bien y esté activo, no hace falta forzar. Si te preocupa, es un buen tema para anotar y traer a la consulta.</div></details>
+      </div>
+    </section>
+
+    <!-- ================= TAB: NOTAS ================= -->
+    <section class="tab-panel" id="panel-notas">
+
+      <div id="notas-list-view">
+        <h2 class="panel-title">Anotaciones para consulta</h2>
+        <div class="panel-sub">Registrá algo en 20 segundos, sin escribir de más.</div>
+        <button class="btn btn-primary btn-block" id="btnNuevaNota" style="margin-bottom:20px;">+ Nueva anotación</button>
+        <div id="notesList"></div>
+      </div>
+
+      <div id="notas-template-view" style="display:none;">
+        <div class="back-link" id="backFromTemplates">← Volver</div>
+        <h2 class="panel-title">¿Sobre qué querés anotar?</h2>
+        <div class="panel-sub">Elegí una situación — te vamos a hacer preguntas cortas.</div>
+        <div class="template-grid">
+          <div class="template-btn" data-tpl="fiebre"><span class="em">🌡️</span><b>Fiebre</b><span>Temperatura, duración, medicación</span></div>
+          <div class="template-btn" data-tpl="alimentacion"><span class="em">🍽️</span><b>Alimentación</b><span>Apetito, rechazo, cambios</span></div>
+          <div class="template-btn" data-tpl="sueno"><span class="em">🌙</span><b>Sueño</b><span>Despertares, dificultad</span></div>
+          <div class="template-btn" data-tpl="piel"><span class="em">🩹</span><b>Piel</b><span>Erupciones, golpes, picaduras</span></div>
+          <div class="template-btn" data-tpl="otro" style="grid-column:1/-1;"><span class="em">✏️</span><b>Otro</b><span>Anotación libre, si ninguna aplica</span></div>
+        </div>
+      </div>
+
+      <div id="notas-form-view" style="display:none;">
+        <div class="back-link" id="backFromForm">← Elegir otra situación</div>
+        <h2 class="panel-title" id="formTitle">Fiebre</h2>
+        <div class="panel-sub">Sobre <b id="formChildName">Mateo</b> — respondé lo que sepas, no hace falta completar todo.</div>
+        <div id="formFields"></div>
+        <button class="btn btn-primary btn-block" id="btnGuardarNota">Guardar anotación</button>
+      </div>
+
+    </section>
+
+    <!-- ================= TAB: ESTUDIOS ================= -->
+    <section class="tab-panel" id="panel-estudios">
+      <h2 class="panel-title">Estudios</h2>
+      <div class="panel-sub">Análisis, radiografías o cualquier estudio que quieras tener a mano en la consulta.</div>
+
+      <div class="chip-row" id="studyCatChips">
+        <div class="chip on" data-cat="Análisis">Análisis de laboratorio</div>
+        <div class="chip" data-cat="Imagen">Radiografía / imagen</div>
+        <div class="chip" data-cat="Otro">Otro</div>
+      </div>
+
+      <div class="upload-zone">
+        <p>Subí el estudio de <b id="uploadChildName">Mateo</b> como PDF o foto</p>
+        <label class="btn btn-primary" for="fileInput">Elegir archivo</label>
+        <input type="file" id="fileInput" class="file-input" accept="application/pdf,image/*">
+      </div>
+
+      <div id="studiesList"></div>
+    </section>
+
+  </div>
+
+  <nav class="bottom-nav">
+    <button class="nav-btn active" data-tab="hijos">
+      <svg width="20" height="20" viewBox="0 0 20 20" fill="none" stroke-width="1.6" stroke-linecap="round"><circle cx="10" cy="6" r="3.2"/><path d="M3.5 17c0-3.5 3-5.5 6.5-5.5S16.5 13.5 16.5 17"/></svg>
+      Hijos
+    </button>
+    <button class="nav-btn" data-tab="turno">
+      <svg width="20" height="20" viewBox="0 0 20 20" fill="none" stroke-width="1.6" stroke-linecap="round"><rect x="3" y="4" width="14" height="13" rx="2"/><path d="M3 8h14M7 2v4M13 2v4"/></svg>
+      Turno
+    </button>
+    <button class="nav-btn" data-tab="indicaciones">
+      <svg width="20" height="20" viewBox="0 0 20 20" fill="none" stroke-width="1.6" stroke-linecap="round"><path d="M5 3h7l3 3v11a1 1 0 01-1 1H5a1 1 0 01-1-1V4a1 1 0 011-1Z"/><path d="M7 9h6M7 12h6M7 15h3"/></svg>
+      Indicaciones
+    </button>
+    <button class="nav-btn" data-tab="notas">
+      <svg width="20" height="20" viewBox="0 0 20 20" fill="none" stroke-width="1.6" stroke-linecap="round"><path d="M4 3.5h9l3 3V16a1 1 0 01-1 1H4a1 1 0 01-1-1V4.5a1 1 0 011-1Z"/><path d="M12 3.5V7h4"/></svg>
+      Notas
+      <span class="nav-badge" id="notesBadge" style="display:none;">1</span>
+    </button>
+    <button class="nav-btn" data-tab="estudios">
+      <svg width="20" height="20" viewBox="0 0 20 20" fill="none" stroke-width="1.6" stroke-linecap="round"><path d="M10 3v9M6 9l4 4 4-4"/><path d="M4 16h12"/></svg>
+      Estudios
+    </button>
+  </nav>
+
+</div>
+
+<script>
+  /* ---------- navegación por pestañas ---------- */
+  document.querySelectorAll('.nav-btn').forEach(btn=>{
+    btn.addEventListener('click', ()=>{
+      document.querySelectorAll('.nav-btn').forEach(b=>b.classList.remove('active'));
+      document.querySelectorAll('.tab-panel').forEach(p=>p.classList.remove('active'));
+      btn.classList.add('active');
+      document.getElementById('panel-'+btn.dataset.tab).classList.add('active');
+      document.querySelector('.tab-content').scrollTop = 0;
+    });
+  });
+
+  /* ---------- segmentado Resumen / Estadísticas (pestaña Hijos) ---------- */
+  document.querySelectorAll('.segmented button').forEach(btn=>{
+    btn.addEventListener('click', ()=>{
+      document.querySelectorAll('.segmented button').forEach(b=>b.classList.remove('active'));
+      document.querySelectorAll('.hijo-subview').forEach(v=>v.classList.remove('active'));
+      btn.classList.add('active');
+      document.getElementById('hijo-sub-'+btn.dataset.sub).classList.add('active');
+    });
+  });
+
+  /* ---------- selector de hijo (global) ---------- */
+  const childNames = {mateo:'Mateo', delfina:'Delfina'};
+  let currentChild = 'mateo';
+  document.querySelectorAll('.child-pill[data-child]').forEach(p=>{
+    p.addEventListener('click', ()=>{
+      document.querySelectorAll('.child-pill').forEach(x=>x.classList.remove('active'));
+      p.classList.add('active');
+      currentChild = p.dataset.child;
+      document.getElementById('uploadChildName').textContent = childNames[currentChild];
+    });
+  });
+
+  /* ---------- chips de categoría (indicaciones y estudios) ---------- */
+  document.querySelectorAll('.chip-row .chip').forEach(chip=>{
+    chip.addEventListener('click', ()=>{
+      chip.parentElement.querySelectorAll('.chip').forEach(c=>c.classList.remove('on'));
+      chip.classList.add('on');
+    });
+  });
+
+  /* ---------- Anotaciones para consulta ---------- */
+  const listView = document.getElementById('notas-list-view');
+  const templateView = document.getElementById('notas-template-view');
+  const formView = document.getElementById('notas-form-view');
+  const notesListEl = document.getElementById('notesList');
+  const notesBadge = document.getElementById('notesBadge');
+
+  let notes = [
+    {hijo:'Mateo', tipo:'Fiebre', fecha:'26 ago', resumen:'Máx 38,5° · 1–2 días · Paracetamol · Tos, mocos'}
+  ];
+
+  const templates = {
+    fiebre: {title:'Fiebre', fields:[
+      {key:'temp', label:'Temperatura máxima', type:'chips', options:['Menos de 38°','38° a 38,5°','38,5° a 39°','Más de 39°']},
+      {key:'duracion', label:'¿Desde cuándo?', type:'chips', options:['Hoy','1–2 días','3 días o más']},
+      {key:'medicacion', label:'¿Le diste algo?', type:'chips', options:['Nada','Paracetamol','Ibuprofeno','Otro']},
+      {key:'sintomas', label:'¿Otros síntomas?', type:'chips-multi', options:['Tos','Mocos','Vómitos','Decaimiento','Erupción','Dolor de oído']},
+      {key:'libre', label:'Algo más (opcional)', type:'text'}
+    ]},
+    alimentacion: {title:'Alimentación', fields:[
+      {key:'motivo', label:'¿Qué notaste?', type:'chips', options:['Come menos que antes','Rechaza un alimento puntual','Cambió el apetito en general','Otro']},
+      {key:'duracion', label:'¿Desde cuándo?', type:'chips', options:['Hoy','Esta semana','Hace más de una semana']},
+      {key:'libre', label:'Algo más (opcional)', type:'text'}
+    ]},
+    sueno: {title:'Sueño', fields:[
+      {key:'motivo', label:'¿Qué notaste?', type:'chips', options:['Se despierta seguido','Cuesta dormirlo','Pesadillas','Otro']},
+      {key:'duracion', label:'¿Desde cuándo?', type:'chips', options:['Hoy','Esta semana','Hace más de una semana']},
+      {key:'libre', label:'Algo más (opcional)', type:'text'}
+    ]},
+    piel: {title:'Piel', fields:[
+      {key:'tipo', label:'¿Qué tipo de marca?', type:'chips', options:['Erupción','Golpe / moretón','Picadura','Otro']},
+      {key:'zona', label:'¿Dónde?', type:'chips', options:['Cara','Tronco','Brazos / piernas','Generalizado']},
+      {key:'libre', label:'Algo más (opcional)', type:'text'}
+    ]},
+    otro: {title:'Otro', fields:[
+      {key:'libre', label:'Contanos qué pasó', type:'text'}
+    ]}
+  };
+
+  function renderNotes(){
+    notesListEl.innerHTML = notes.length
+      ? notes.slice().reverse().map(n=>`
+        <div class="note-card">
+          <div class="nc-head"><span class="nc-tipo">${n.tipo}</span><span class="nc-fecha">${n.fecha}</span></div>
+          <div class="nc-resumen">${n.resumen}</div>
+          <span class="nc-hijo">${n.hijo}</span>
+        </div>`).join('')
+      : `<div class="notes-empty">Todavía no cargaste ninguna anotación.<br>Cuando algo te llame la atención entre consultas, registralo acá.</div>`;
+    if(notes.length){ notesBadge.style.display='flex'; notesBadge.textContent = notes.length; }
+  }
+
+  document.getElementById('btnNuevaNota').addEventListener('click', ()=>{
+    listView.style.display='none'; templateView.style.display='block';
+  });
+  document.getElementById('backFromTemplates').addEventListener('click', ()=>{
+    templateView.style.display='none'; listView.style.display='block';
+  });
+  document.getElementById('backFromForm').addEventListener('click', ()=>{
+    formView.style.display='none'; templateView.style.display='block';
+  });
+
+  let currentTpl = null;
+  document.querySelectorAll('.template-btn').forEach(btn=>{
+    btn.addEventListener('click', ()=>{
+      currentTpl = btn.dataset.tpl;
+      const tpl = templates[currentTpl];
+      document.getElementById('formTitle').textContent = tpl.title;
+      document.getElementById('formChildName').textContent = childNames[currentChild];
+      const fieldsEl = document.getElementById('formFields');
+      fieldsEl.innerHTML = tpl.fields.map(f=>{
+        if(f.type==='text'){
+          return `<div class="form-field" data-key="${f.key}" data-type="text"><label>${f.label}</label><textarea class="free-text" placeholder="Escribí acá si querés agregar algo puntual..."></textarea></div>`;
+        }
+        const multi = f.type==='chips-multi';
+        return `<div class="form-field" data-key="${f.key}" data-type="${f.type}"><label>${f.label}</label><div class="chip-row" style="margin-bottom:0;">${
+          f.options.map(o=>`<div class="chip" data-val="${o}" data-multi="${multi}">${o}</div>`).join('')
+        }</div></div>`;
+      }).join('');
+      fieldsEl.querySelectorAll('.chip').forEach(chip=>{
+        chip.addEventListener('click', ()=>{
+          const multi = chip.dataset.multi === 'true';
+          if(!multi){ chip.parentElement.querySelectorAll('.chip').forEach(c=>c.classList.remove('on')); }
+          chip.classList.toggle('on');
+        });
+      });
+      templateView.style.display='none'; formView.style.display='block';
+    });
+  });
+
+  document.getElementById('btnGuardarNota').addEventListener('click', ()=>{
+    const parts = [];
+    document.querySelectorAll('#formFields .form-field').forEach(fEl=>{
+      if(fEl.dataset.type==='text'){
+        const val = fEl.querySelector('textarea').value.trim();
+        if(val) parts.push(val);
+      } else {
+        const chosen = [...fEl.querySelectorAll('.chip.on')].map(c=>c.dataset.val);
+        if(chosen.length) parts.push(chosen.join(' + '));
+      }
+    });
+    const tpl = templates[currentTpl];
+    notes.push({
+      hijo: childNames[currentChild],
+      tipo: tpl.title,
+      fecha: new Date().toLocaleDateString('es-AR',{day:'2-digit',month:'short'}),
+      resumen: parts.length ? parts.join(' · ') : 'Sin detalle adicional'
+    });
+    renderNotes();
+    formView.style.display='none'; listView.style.display='block';
+  });
+
+  renderNotes();
+
+  /* ---------- Estudios ---------- */
+  let studies = [
+    {name:'Hemograma completo.pdf', cat:'Análisis de laboratorio', fecha:'20 ago 2026', hijo:'Mateo'}
+  ];
+  function renderStudies(){
+    document.getElementById('studiesList').innerHTML = studies.slice().reverse().map(s=>`
+      <div class="study-card">
+        <div class="study-ic">${s.name.match(/\.(png|jpe?g)$/i) ? '🖼️' : '📄'}</div>
+        <div class="study-info"><b>${s.name}</b><span>${s.cat} · ${s.hijo} · ${s.fecha}</span></div>
+      </div>`).join('');
+  }
+  document.getElementById('fileInput').addEventListener('change', (e)=>{
+    if(!e.target.files.length) return;
+    const cat = document.querySelector('#studyCatChips .chip.on').textContent;
+    const file = e.target.files[0];
+    studies.push({name:file.name, cat, fecha:new Date().toLocaleDateString('es-AR',{day:'2-digit',month:'short',year:'numeric'}), hijo:childNames[currentChild]});
+    renderStudies();
+    e.target.value='';
+  });
+  renderStudies();
+</script>
+
+</body>
+</html>
