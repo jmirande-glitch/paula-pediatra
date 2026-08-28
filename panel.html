@@ -1,0 +1,1101 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Panel de Paula — Estadísticas</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Newsreader:ital,opsz,wght@0,6..72,400;0,6..72,500;0,6..72,600;1,6..72,500&family=Inter:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+:root{
+  --paper:#F6F1E7; --paper-2:#EFE6D3; --card:#FFFDF9;
+  --ink:#2B2A25; --ink-soft:#6E6C5E;
+  --jac:#6C5B9C; --jac-deep:#4E3F79; --jac-tint:#EFE9F4;
+  --grid:#DDD3BE;
+  --amarillo:#C9944A; --amarillo-tint:#F6EBD8;
+  --terracota:#B85C3E; --terracota-tint:#F5E2D5;
+  --verde:#5C7F5E; --verde-tint:#E6EEE1;
+  --radius:18px; --radius-sm:12px; --shadow:0 14px 34px -16px rgba(43,42,37,.28);
+}
+*{box-sizing:border-box;margin:0;padding:0;}
+body{font-family:'Inter',sans-serif;background:var(--paper);color:var(--ink);line-height:1.5;-webkit-font-smoothing:antialiased;}
+.serif{font-family:'Newsreader',serif;}
+.mono{font-family:'IBM Plex Mono',monospace;}
+a{color:inherit;text-decoration:none;}
+.wrap{max-width:1080px;margin:0 auto;padding:0 24px;}
+
+.topbar{background:rgba(246,241,231,.94);backdrop-filter:blur(8px);border-bottom:1px solid var(--grid);position:sticky;top:0;z-index:20;}
+.topbar .wrap{display:flex;align-items:center;justify-content:space-between;padding:14px 24px;}
+.tb-left{display:flex;align-items:center;gap:10px;}
+.tb-mark{width:32px;height:32px;border-radius:9px;background:var(--jac);display:flex;align-items:center;justify-content:center;}
+.tb-title{font-family:'Newsreader',serif;font-size:1.02rem;}
+.tb-title small{display:block;font-family:'IBM Plex Mono',monospace;font-size:.6rem;letter-spacing:.08em;text-transform:uppercase;color:var(--ink-soft);}
+.tabs-top{display:flex;gap:22px;font-size:.86rem;color:var(--ink-soft);}
+.tabs-top a.active{color:var(--jac-deep);font-weight:700;}
+
+.content{padding:26px 0 60px;}
+.page-title{font-family:'Newsreader',serif;font-weight:500;font-size:1.6rem;margin-bottom:4px;}
+.page-sub{font-size:.87rem;color:var(--ink-soft);margin-bottom:24px;}
+
+/* summary cards */
+.summary-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;flex-wrap:wrap;gap:10px;}
+.summary-head h3{font-family:'Newsreader',serif;font-weight:500;font-size:1.05rem;}
+.summary{display:grid;grid-template-columns:repeat(3,1fr);gap:16px;margin-bottom:14px;}
+@media(max-width:760px){.summary{grid-template-columns:1fr;}}
+.sum-card{background:var(--card);border:1px solid var(--grid);border-radius:var(--radius);padding:24px 26px;}
+.sum-card .label{font-family:'IBM Plex Mono',monospace;font-size:.66rem;letter-spacing:.04em;text-transform:uppercase;color:var(--ink-soft);margin-bottom:10px;}
+.sum-card .value{font-family:'Newsreader',serif;font-size:1.9rem;}
+.sum-card .value small{font-family:'Inter',sans-serif;font-size:.78rem;font-weight:600;color:var(--verde);}
+.period-custom{display:none;gap:10px;align-items:center;margin-bottom:26px;background:var(--card);border:1px solid var(--grid);border-radius:var(--radius-sm);padding:12px 16px;}
+.period-custom.show{display:flex;flex-wrap:wrap;}
+.period-custom span{font-size:.78rem;color:var(--ink-soft);font-weight:600;}
+.period-custom input[type=date]{border:1px solid var(--grid);background:var(--paper);border-radius:8px;padding:7px 10px;font-size:.8rem;font-family:inherit;color:var(--ink);}
+.period-custom button{margin-left:auto;}
+
+/* dropdown genérico (período + filtros) */
+.dd{position:relative;}
+.dd-btn{display:flex;align-items:center;gap:7px;border:1px solid var(--grid);background:var(--card);padding:10px 15px;border-radius:100px;font-size:.82rem;font-weight:600;color:var(--ink);cursor:pointer;}
+.dd-btn.set{border-color:var(--jac);background:var(--jac-tint);color:var(--jac-deep);}
+.dd-btn svg{width:11px;height:11px;flex-shrink:0;transition:transform .15s;}
+.dd.open .dd-btn svg{transform:rotate(180deg);}
+.dd-menu{position:absolute;top:calc(100% + 8px);left:0;background:var(--card);border:1px solid var(--grid);border-radius:var(--radius-sm);box-shadow:var(--shadow);padding:6px;min-width:190px;z-index:30;display:none;}
+.dd.open .dd-menu{display:block;}
+.dd-menu.right{left:auto;right:0;}
+.dd-opt{padding:9px 11px;border-radius:8px;font-size:.83rem;cursor:pointer;color:var(--ink);display:flex;align-items:center;gap:9px;}
+.dd-opt:hover{background:var(--paper-2);}
+.dd-opt.sel{color:var(--jac-deep);font-weight:600;}
+.dd-opt .box{width:15px;height:15px;border:1.5px solid var(--grid);border-radius:5px;flex-shrink:0;display:flex;align-items:center;justify-content:center;}
+.dd-opt.sel .box{background:var(--jac);border-color:var(--jac);}
+.dd-opt.sel .box::after{content:'✓';color:#fff;font-size:.6rem;}
+.dd-opt.single .box{border-radius:50%;}
+
+/* admin panels (Pacientes / Indicaciones / Alertas / Estadísticas) */
+.admin-panel{display:none;}
+.admin-panel.active{display:block;}
+
+/* listas genéricas */
+.list-card{background:var(--card);border:1px solid var(--grid);border-radius:var(--radius);padding:8px 22px;margin-bottom:20px;}
+.item-row{display:flex;justify-content:space-between;align-items:center;gap:14px;padding:15px 0;border-top:1px solid var(--grid);}
+.item-row:first-of-type{border-top:none;}
+.item-row .titles{display:flex;align-items:center;gap:10px;flex-wrap:wrap;}
+.item-row .titles b{font-family:'Newsreader',serif;font-size:.96rem;}
+.item-row .meta{color:var(--ink-soft);font-size:.78rem;margin-top:2px;}
+.item-actions{display:flex;align-items:center;gap:14px;flex-shrink:0;}
+.item-actions .edit{color:var(--jac-deep);font-weight:700;font-size:.78rem;cursor:pointer;}
+.status-badge{font-size:.62rem;font-weight:700;text-transform:uppercase;letter-spacing:.03em;padding:3px 9px;border-radius:100px;}
+.status-badge.pub{background:var(--verde-tint);color:var(--verde);}
+.status-badge.draft{background:var(--paper-2);color:var(--ink-soft);}
+.status-badge.active{background:var(--terracota-tint);color:var(--terracota);}
+.status-badge.enf{background:var(--terracota-tint);color:var(--terracota);}
+.status-badge.vac{background:var(--amarillo-tint);color:var(--amarillo);}
+.status-badge.ctrl{background:var(--jac-tint);color:var(--jac-deep);}
+.patient-ficha{background:var(--card);border:1px solid var(--jac);border-radius:var(--radius);padding:22px;margin-top:20px;}
+
+/* ayuda / instructivo */
+.help-index{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:28px;}
+.help-index a{border:1px solid var(--grid);background:var(--card);padding:8px 14px;border-radius:100px;font-size:.8rem;font-weight:600;color:var(--ink-soft);}
+.help-index a:hover{border-color:var(--jac);color:var(--jac-deep);}
+.help-card{background:var(--card);border:1px solid var(--grid);border-radius:var(--radius);padding:24px 26px;margin-bottom:18px;scroll-margin-top:80px;}
+.help-card h3{font-family:'Newsreader',serif;font-weight:500;font-size:1.15rem;margin-bottom:6px;display:flex;align-items:center;gap:10px;}
+.help-card .num{width:26px;height:26px;border-radius:50%;background:var(--jac-tint);color:var(--jac-deep);font-family:'IBM Plex Mono',monospace;font-size:.78rem;display:flex;align-items:center;justify-content:center;flex-shrink:0;}
+.help-card p{font-size:.87rem;color:var(--ink-soft);margin-bottom:12px;}
+.help-card ol,.help-card ul{padding-left:20px;font-size:.87rem;color:var(--ink);}
+.help-card li{margin-bottom:7px;}
+.help-note{background:var(--jac-tint);border-radius:var(--radius-sm);padding:14px 16px;font-size:.82rem;color:var(--jac-deep);margin-top:12px;}
+.help-status{background:var(--terracota-tint);border:1px solid #E7C3B2;border-radius:var(--radius);padding:20px 24px;margin-bottom:26px;}
+.help-status h3{font-family:'Newsreader',serif;font-weight:500;font-size:1.05rem;color:var(--terracota);margin-bottom:8px;}
+.help-status p{font-size:.87rem;color:var(--ink);margin-bottom:0;}
+.cat-badge{font-size:.62rem;font-weight:700;text-transform:uppercase;letter-spacing:.03em;padding:3px 9px;border-radius:100px;background:var(--jac-tint);color:var(--jac-deep);}
+
+/* toggle switch */
+.switch{position:relative;width:38px;height:22px;flex-shrink:0;display:inline-block;}
+.switch input{opacity:0;width:0;height:0;position:absolute;}
+.switch .slider{position:absolute;inset:0;background:var(--grid);border-radius:100px;cursor:pointer;transition:.2s;}
+.switch .slider::before{content:'';position:absolute;width:16px;height:16px;left:3px;top:3px;background:#fff;border-radius:50%;transition:.2s;}
+.switch input:checked + .slider{background:var(--verde);}
+.switch input:checked + .slider::before{transform:translateX(16px);}
+
+/* editor / formulario */
+.editor-card{background:var(--card);border:1px solid var(--jac);border-radius:var(--radius);padding:22px;margin-bottom:20px;}
+.editor-card h3{font-family:'Newsreader',serif;font-weight:500;font-size:1.05rem;margin-bottom:18px;}
+.form-row{margin-bottom:16px;}
+.form-row label{display:block;font-size:.7rem;font-weight:700;text-transform:uppercase;letter-spacing:.03em;color:var(--ink-soft);margin-bottom:8px;}
+.form-row input[type=text],.form-row input[type=date],.form-row textarea{width:100%;border:1px solid var(--grid);background:var(--paper);border-radius:var(--radius-sm);padding:11px 13px;font-size:.86rem;font-family:inherit;color:var(--ink);}
+.form-row textarea{min-height:90px;resize:vertical;}
+.form-inline{display:flex;gap:14px;flex-wrap:wrap;}
+.form-inline .form-row{flex:1;min-width:150px;}
+.chip-select{display:flex;flex-wrap:wrap;gap:8px;}
+.chip-select .opt{border:1px solid var(--grid);background:var(--paper);padding:7px 14px;border-radius:100px;font-size:.8rem;font-weight:600;color:var(--ink-soft);cursor:pointer;}
+.chip-select .opt.on{border-color:var(--jac);background:var(--jac-tint);color:var(--jac-deep);}
+.form-actions{display:flex;gap:10px;justify-content:flex-end;}
+.btn-sm{border:1px solid var(--ink);color:var(--ink);background:transparent;padding:10px 18px;border-radius:100px;font-size:.82rem;font-weight:600;cursor:pointer;}
+.btn-sm.primary{background:var(--jac);color:#fff;border-color:var(--jac);}
+.btn-sm.primary:hover{background:var(--jac-deep);}
+.panel-cta{display:flex;justify-content:space-between;align-items:center;margin-bottom:18px;flex-wrap:wrap;gap:10px;}
+.quick-filters{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:16px;}
+.qf-chip{border:1px solid var(--grid);background:var(--card);padding:8px 14px;border-radius:100px;font-size:.8rem;font-weight:600;color:var(--ink-soft);cursor:pointer;}
+.qf-chip.on{border-color:var(--jac);background:var(--jac-tint);color:var(--jac-deep);}
+
+/* importar (pegar y confirmar) */
+.segmented{display:flex;background:var(--paper-2);border-radius:100px;padding:3px;margin-bottom:22px;max-width:420px;}
+.segmented button{flex:1;border:none;background:transparent;padding:9px;border-radius:100px;font-size:.82rem;font-weight:600;color:var(--ink-soft);cursor:pointer;}
+.segmented button.active{background:var(--card);color:var(--ink);box-shadow:0 2px 6px rgba(0,0,0,.06);}
+.import-subview{display:none;}
+.import-subview.active{display:block;}
+.paste-box{width:100%;border:1px solid var(--grid);background:var(--card);border-radius:var(--radius-sm);padding:14px 16px;font-family:'IBM Plex Mono',monospace;font-size:.78rem;line-height:1.6;min-height:170px;resize:vertical;color:var(--ink);}
+.paste-hint{font-size:.78rem;color:var(--ink-soft);margin:10px 0 16px;}
+.parsed-card{background:var(--card);border:1px solid var(--grid);border-radius:var(--radius);padding:18px 20px;margin-bottom:14px;}
+.parsed-head{display:flex;gap:12px;margin-bottom:14px;flex-wrap:wrap;}
+.parsed-head input[type=text]{flex:2;min-width:180px;border:1px solid var(--grid);background:var(--paper);border-radius:var(--radius-sm);padding:9px 12px;font-size:.88rem;font-family:'Newsreader',serif;color:var(--ink);}
+.parsed-head input[type=date]{border:1px solid var(--grid);background:var(--paper);border-radius:var(--radius-sm);padding:9px 12px;font-size:.82rem;color:var(--ink);}
+.extracted-row{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:14px;}
+.extracted-field{display:flex;align-items:center;gap:6px;background:var(--jac-tint);border-radius:100px;padding:5px 6px 5px 12px;}
+.extracted-field span{font-size:.7rem;font-weight:700;color:var(--jac-deep);text-transform:uppercase;letter-spacing:.02em;}
+.extracted-field input{width:56px;border:none;background:var(--card);border-radius:100px;padding:4px 9px;font-size:.78rem;font-family:'IBM Plex Mono',monospace;color:var(--ink);text-align:center;}
+.extracted-field.empty{background:var(--paper-2);}
+.extracted-field.empty span{color:var(--ink-soft);}
+.parsed-text{width:100%;border:1px solid var(--grid);background:var(--paper);border-radius:var(--radius-sm);padding:11px 13px;font-size:.8rem;font-family:'IBM Plex Mono',monospace;color:var(--ink-soft);min-height:90px;resize:vertical;margin-bottom:12px;}
+.parsed-foot{display:flex;justify-content:space-between;align-items:center;}
+.parsed-foot label{display:flex;align-items:center;gap:8px;font-size:.78rem;color:var(--ink-soft);}
+.discard-link{font-size:.78rem;color:var(--terracota);cursor:pointer;font-weight:600;}
+.import-table{width:100%;border-collapse:collapse;margin-bottom:6px;}
+.import-table th{text-align:left;font-size:.68rem;text-transform:uppercase;letter-spacing:.03em;color:var(--ink-soft);padding:9px 10px;border-bottom:1px solid var(--grid);}
+.import-table td{padding:11px 10px;font-size:.84rem;border-bottom:1px solid var(--grid);}
+.import-table tr:last-child td{border-bottom:none;}
+.import-summary{background:var(--verde-tint);color:var(--verde);border-radius:var(--radius-sm);padding:14px 16px;font-size:.85rem;font-weight:600;margin-top:14px;display:none;}
+.import-summary.show{display:block;}
+
+/* filtros */
+.filters-card{background:var(--card);border:1px solid var(--grid);border-radius:var(--radius);padding:20px 22px;margin-bottom:26px;}
+.filters-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;}
+.filters-head h3{font-family:'Newsreader',serif;font-weight:500;font-size:1.05rem;}
+.filters-head .clear{font-size:.78rem;color:var(--ink-soft);cursor:pointer;}
+.filterbar{display:flex;flex-wrap:wrap;gap:10px;margin-bottom:14px;}
+.active-filters{display:flex;flex-wrap:wrap;gap:8px;}
+.active-filters:empty{display:none;}
+.af-chip{display:flex;align-items:center;gap:7px;background:var(--jac-tint);color:var(--jac-deep);padding:5px 6px 5px 13px;border-radius:100px;font-size:.78rem;font-weight:600;}
+.af-chip button{background:rgba(76,63,121,.12);border:none;color:var(--jac-deep);cursor:pointer;width:17px;height:17px;border-radius:50%;font-size:.7rem;line-height:1;display:flex;align-items:center;justify-content:center;}
+.af-chip button:hover{background:rgba(76,63,121,.25);}
+
+/* results grid */
+.results{display:grid;grid-template-columns:1.3fr 1fr;gap:20px;margin-bottom:28px;}
+@media(max-width:860px){.results{grid-template-columns:1fr;}}
+.chart-card{background:var(--card);border:1px solid var(--grid);border-radius:var(--radius);padding:20px 22px;}
+.chart-card h3{font-family:'Newsreader',serif;font-weight:500;font-size:1.05rem;margin-bottom:16px;}
+
+/* edad distribution bars */
+.age-bars{display:flex;align-items:flex-end;gap:14px;height:140px;margin-bottom:8px;}
+.age-col{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:flex-end;gap:8px;height:100%;}
+.age-bar{width:100%;background:var(--jac);border-radius:6px 6px 3px 3px;opacity:.85;position:relative;}
+.age-bar span.n{position:absolute;top:-20px;left:0;right:0;text-align:center;font-family:'IBM Plex Mono',monospace;font-size:.68rem;color:var(--ink-soft);}
+.age-col span.lbl{font-size:.68rem;color:var(--ink-soft);}
+
+/* diagnosticos ranking */
+.rank-row{display:flex;align-items:center;gap:10px;margin-bottom:11px;}
+.rank-row:last-child{margin-bottom:0;}
+.rank-label{width:118px;font-size:.8rem;color:var(--ink);flex-shrink:0;}
+.rank-track{flex:1;height:9px;background:var(--paper-2);border-radius:100px;overflow:hidden;}
+.rank-fill{height:100%;background:var(--terracota);border-radius:100px;}
+.rank-count{font-family:'IBM Plex Mono',monospace;font-size:.7rem;color:var(--ink-soft);width:26px;text-align:right;}
+
+/* sexo donut */
+.donut-row{display:flex;align-items:center;gap:20px;}
+.donut-wrap svg{transform:rotate(-90deg);}
+.donut-legend{display:flex;flex-direction:column;gap:8px;font-size:.82rem;}
+.donut-legend span{display:flex;align-items:center;gap:8px;}
+.donut-legend i{width:10px;height:10px;border-radius:50%;display:inline-block;}
+
+/* patient search */
+.search-card{background:var(--card);border:1px solid var(--grid);border-radius:var(--radius);padding:20px 22px;}
+.search-card h3{font-family:'Newsreader',serif;font-weight:500;font-size:1.05rem;margin-bottom:14px;}
+.search-input{width:100%;border:1px solid var(--grid);background:var(--paper);border-radius:100px;padding:11px 16px;font-size:.86rem;margin-bottom:14px;}
+.patient-row{display:flex;align-items:center;justify-content:space-between;padding:11px 0;border-top:1px solid var(--grid);font-size:.85rem;}
+.patient-row:first-of-type{border-top:none;}
+.patient-row .name{font-weight:600;}
+.patient-row .meta{color:var(--ink-soft);font-size:.78rem;}
+.patient-row .view{color:var(--jac-deep);font-weight:700;font-size:.78rem;}
+
+/* drilldown */
+.drilldown{background:var(--card);border:1px solid var(--jac);border-radius:var(--radius);padding:22px;margin-top:20px;}
+.drilldown-head{display:flex;justify-content:space-between;align-items:baseline;margin-bottom:14px;}
+.drilldown-head h3{font-family:'Newsreader',serif;font-weight:500;font-size:1.2rem;}
+.drilldown-head .close{font-size:.78rem;color:var(--ink-soft);cursor:pointer;}
+.dd-stats{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;}
+@media(max-width:640px){.dd-stats{grid-template-columns:1fr;}}
+.dd-stat{background:var(--paper);border-radius:var(--radius-sm);padding:12px 14px;}
+.dd-stat .label{font-size:.64rem;font-family:'IBM Plex Mono',monospace;color:var(--ink-soft);text-transform:uppercase;margin-bottom:4px;}
+.dd-stat .value{font-family:'Newsreader',serif;font-size:1.1rem;}
+</style>
+</head>
+<body>
+
+<div style="background:var(--jac-deep);color:#fff;text-align:center;font-size:.72rem;font-weight:600;padding:7px 12px;">Versión de prueba — datos ficticios, no conectado todavía a Quality ni Supabase</div>
+
+<div class="topbar">
+  <div class="wrap">
+    <div class="tb-left">
+      <a href="index.html" style="display:flex;align-items:center;gap:10px;">
+      <div class="tb-mark"><svg width="16" height="16" viewBox="0 0 20 20" fill="none"><path d="M2 15 C 6 15, 6 6, 10 8 C 14 10, 14 3, 18 3" stroke="#fff" stroke-width="1.8" stroke-linecap="round"/></svg></div>
+      <div class="tb-title">Panel de Paula<small>Pediatra — Yerba Buena</small></div>
+      </a>
+    </div>
+    <div class="tabs-top">
+      <a href="#" data-tab="pacientes">Pacientes</a>
+      <a href="#" data-tab="importar">Importar</a>
+      <a href="#" data-tab="indicaciones">Indicaciones</a>
+      <a href="#" data-tab="alertas">Alertas</a>
+      <a href="#" data-tab="estadisticas" class="active">Estadísticas</a>
+      <a href="#" data-tab="ayuda">Ayuda</a>
+    </div>
+  </div>
+</div>
+
+<div class="wrap content">
+
+<!-- ================= PANEL: ESTADÍSTICAS ================= -->
+<div class="admin-panel active" id="panel-estadisticas">
+  <div class="page-title">Estadísticas</div>
+  <div class="page-sub">Cruzá tus pacientes por edad, sexo o diagnóstico, o buscá a uno en particular.</div>
+
+  <div class="summary-head">
+    <h3>Resumen</h3>
+    <div class="dd" id="ddPeriod">
+      <button class="dd-btn set" id="periodBtn">Este mes <svg viewBox="0 0 10 6" fill="none"><path d="M1 1l4 4 4-4" stroke="currentColor" stroke-width="1.6"/></svg></button>
+      <div class="dd-menu right">
+        <div class="dd-opt single" data-period="Semana pasada"><span class="box"></span>Semana pasada</div>
+        <div class="dd-opt single sel" data-period="Este mes"><span class="box"></span>Este mes</div>
+        <div class="dd-opt single" data-period="Mes pasado"><span class="box"></span>Mes pasado</div>
+        <div class="dd-opt single" data-period="Este año"><span class="box"></span>Este año</div>
+        <div class="dd-opt single" data-period="Últimos 12 meses"><span class="box"></span>Últimos 12 meses</div>
+        <div class="dd-opt single" data-period="Elegir fechas"><span class="box"></span>Elegir fechas…</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="period-custom" id="periodCustom">
+    <span>Desde</span><input type="date">
+    <span>Hasta</span><input type="date">
+    <button class="dd-btn set" style="border-radius:8px;">Aplicar</button>
+  </div>
+
+  <div class="summary">
+    <div class="sum-card"><div class="label">Pacientes atendidos — este mes</div><div class="value">47 <small>↑ 12%</small></div></div>
+    <div class="sum-card"><div class="label">Consultas totales — este mes</div><div class="value">63</div></div>
+    <div class="sum-card"><div class="label">Familias activas en el portal</div><div class="value">128</div></div>
+  </div>
+
+  <div class="filters-card">
+    <div class="filters-head"><h3>Filtrar pacientes</h3><span class="clear" id="clearFilters">Limpiar filtros</span></div>
+    <div class="filterbar">
+      <div class="dd" id="ddEdad">
+        <button class="dd-btn">Edad <svg viewBox="0 0 10 6" fill="none"><path d="M1 1l4 4 4-4" stroke="currentColor" stroke-width="1.6"/></svg></button>
+        <div class="dd-menu">
+          <div class="dd-opt" data-group="Edad" data-val="0–1 año"><span class="box"></span>0–1 año</div>
+          <div class="dd-opt" data-group="Edad" data-val="1–3 años"><span class="box"></span>1–3 años</div>
+          <div class="dd-opt" data-group="Edad" data-val="3–6 años"><span class="box"></span>3–6 años</div>
+          <div class="dd-opt" data-group="Edad" data-val="6–12 años"><span class="box"></span>6–12 años</div>
+        </div>
+      </div>
+      <div class="dd" id="ddSexo">
+        <button class="dd-btn">Sexo <svg viewBox="0 0 10 6" fill="none"><path d="M1 1l4 4 4-4" stroke="currentColor" stroke-width="1.6"/></svg></button>
+        <div class="dd-menu">
+          <div class="dd-opt" data-group="Sexo" data-val="Femenino"><span class="box"></span>Femenino</div>
+          <div class="dd-opt" data-group="Sexo" data-val="Masculino"><span class="box"></span>Masculino</div>
+        </div>
+      </div>
+      <div class="dd" id="ddDiag">
+        <button class="dd-btn">Diagnóstico <svg viewBox="0 0 10 6" fill="none"><path d="M1 1l4 4 4-4" stroke="currentColor" stroke-width="1.6"/></svg></button>
+        <div class="dd-menu">
+          <div class="dd-opt" data-group="Diagnóstico" data-val="Resfrío"><span class="box"></span>Resfrío</div>
+          <div class="dd-opt" data-group="Diagnóstico" data-val="Bronquiolitis"><span class="box"></span>Bronquiolitis</div>
+          <div class="dd-opt" data-group="Diagnóstico" data-val="Otitis"><span class="box"></span>Otitis</div>
+          <div class="dd-opt" data-group="Diagnóstico" data-val="Gastroenteritis"><span class="box"></span>Gastroenteritis</div>
+        </div>
+      </div>
+    </div>
+    <div class="active-filters" id="activeFilters"></div>
+  </div>
+
+  <div class="results">
+    <div class="chart-card">
+      <h3>Distribución por edad</h3>
+      <div class="age-bars">
+        <div class="age-col"><div class="age-bar" style="height:35%;"><span class="n">28</span></div><span class="lbl">0–1 a</span></div>
+        <div class="age-col"><div class="age-bar" style="height:70%;"><span class="n">56</span></div><span class="lbl">1–3 a</span></div>
+        <div class="age-col"><div class="age-bar" style="height:100%;"><span class="n">81</span></div><span class="lbl">3–6 a</span></div>
+        <div class="age-col"><div class="age-bar" style="height:60%;"><span class="n">47</span></div><span class="lbl">6–12 a</span></div>
+      </div>
+    </div>
+
+    <div class="chart-card">
+      <h3>Distribución por sexo</h3>
+      <div class="donut-row">
+        <div class="donut-wrap">
+          <svg width="110" height="110" viewBox="0 0 110 110">
+            <circle cx="55" cy="55" r="42" fill="none" stroke="#F6EBD8" stroke-width="16"/>
+            <circle cx="55" cy="55" r="42" fill="none" stroke="#6C5B9C" stroke-width="16" stroke-linecap="round"
+              stroke-dasharray="263.9" stroke-dashoffset="118"/>
+          </svg>
+        </div>
+        <div class="donut-legend">
+          <span><i style="background:#6C5B9C"></i> Femenino — 55%</span>
+          <span><i style="background:#F6EBD8;border:1px solid #C9944A"></i> Masculino — 45%</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="chart-card" style="margin-bottom:26px;">
+    <h3>Diagnósticos más frecuentes en el período filtrado</h3>
+    <div class="rank-row"><div class="rank-label">Resfrío común</div><div class="rank-track"><div class="rank-fill" style="width:100%;"></div></div><div class="rank-count">94</div></div>
+    <div class="rank-row"><div class="rank-label">Bronquiolitis</div><div class="rank-track"><div class="rank-fill" style="width:38%;"></div></div><div class="rank-count">36</div></div>
+    <div class="rank-row"><div class="rank-label">Otitis media</div><div class="rank-track"><div class="rank-fill" style="width:29%;"></div></div><div class="rank-count">27</div></div>
+    <div class="rank-row"><div class="rank-label">Gastroenteritis</div><div class="rank-track"><div class="rank-fill" style="width:21%;"></div></div><div class="rank-count">20</div></div>
+    <div class="rank-row"><div class="rank-label">Varicela</div><div class="rank-track"><div class="rank-fill" style="width:9%;"></div></div><div class="rank-count">8</div></div>
+  </div>
+
+  <div class="search-card">
+    <h3>Buscar paciente o familia</h3>
+    <input class="search-input" type="text" placeholder="Nombre del paciente o de la familia...">
+    <div class="patient-row"><div><div class="name">Mateo Gómez</div><div class="meta">Familia Demo · 5 años · Último control 15 ago</div></div><div class="view" id="openDrilldown">Ver estadísticas →</div></div>
+    <div class="patient-row"><div><div class="name">Delfina Gómez</div><div class="meta">Familia Demo · 2 años · Último control 3 ago</div></div><div class="view">Ver estadísticas →</div></div>
+    <div class="patient-row"><div><div class="name">Lucía Ibáñez</div><div class="meta">Familia Ibáñez · 3 años · Último control 20 jul</div></div><div class="view">Ver estadísticas →</div></div>
+  </div>
+
+  <div class="drilldown" id="drilldown" style="display:none;">
+    <div class="drilldown-head"><h3>Mateo Gómez — 5 años</h3><span class="close" id="closeDrilldown">Cerrar ✕</span></div>
+    <div class="dd-stats">
+      <div class="dd-stat"><div class="label">Controles (histórico)</div><div class="value">18</div></div>
+      <div class="dd-stat"><div class="label">Diagnóstico más frecuente</div><div class="value">Resfrío común (4)</div></div>
+      <div class="dd-stat"><div class="label">Días de sanidad — 2026</div><div class="value">94%</div></div>
+    </div>
+  </div>
+</div><!-- /panel-estadisticas -->
+
+<!-- ================= PANEL: PACIENTES ================= -->
+<div class="admin-panel" id="panel-pacientes">
+  <div class="page-title">Pacientes</div>
+  <div class="page-sub">Tu directorio de familias — la historia clínica se sigue cargando en Quality.</div>
+
+  <div class="quick-filters">
+    <div class="qf-chip on">Todos (128 familias)</div>
+    <div class="qf-chip">Control esta semana</div>
+    <div class="qf-chip">Vacunas atrasadas</div>
+    <div class="qf-chip">Sin actividad hace 6+ meses</div>
+  </div>
+
+  <div class="list-card">
+    <input class="search-input" style="margin:14px 0;" type="text" placeholder="Buscar por nombre de paciente o familia...">
+    <div class="item-row">
+      <div class="titles"><b>Mateo Gómez</b></div>
+      <div class="meta" style="flex:1;">Familia Demo · 5 años · próximo control 14 oct</div>
+      <div class="item-actions"><span class="edit ver-ficha" data-patient="mateo">Ver ficha</span></div>
+    </div>
+    <div class="item-row">
+      <div class="titles"><b>Delfina Gómez</b></div>
+      <div class="meta" style="flex:1;">Familia Demo · 2 años · próximo control 2 sep</div>
+      <div class="item-actions"><span class="edit ver-ficha" data-patient="delfina">Ver ficha</span></div>
+    </div>
+    <div class="item-row">
+      <div class="titles"><b>Lucía Ibáñez</b></div>
+      <div class="meta" style="flex:1;">Familia Ibáñez · 3 años · vacunas atrasadas</div>
+      <div class="item-actions"><span class="status-badge active">Atención</span><span class="edit ver-ficha" data-patient="lucia">Ver ficha</span></div>
+    </div>
+    <div class="item-row">
+      <div class="titles"><b>Tomás Herrera</b></div>
+      <div class="meta" style="flex:1;">Familia Herrera · 8 meses · próximo control 20 sep</div>
+      <div class="item-actions"><span class="edit ver-ficha" data-patient="tomas">Ver ficha</span></div>
+    </div>
+  </div>
+
+  <div class="patient-ficha" id="patientFicha" style="display:none;">
+    <div class="drilldown-head">
+      <h3 id="pf-nombre">—</h3>
+      <span class="close" id="closeFicha">Cerrar ✕</span>
+    </div>
+    <div class="dd-stats" style="margin-bottom:16px;">
+      <div class="dd-stat"><div class="label">DNI</div><div class="value" id="pf-dni">—</div></div>
+      <div class="dd-stat"><div class="label">Familia</div><div class="value" id="pf-familia">—</div></div>
+      <div class="dd-stat"><div class="label">Próximo control</div><div class="value" id="pf-proximo">—</div></div>
+    </div>
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;">
+      <h4 style="font-family:'Newsreader',serif;font-weight:500;font-size:.95rem;">Últimos registros</h4>
+      <button class="btn-sm primary" id="btnNuevaAtencion">+ Nueva atención</button>
+    </div>
+
+    <div class="editor-card" id="formNuevaAtencion" style="display:none;">
+      <h3>Nueva atención</h3>
+      <div class="form-row"><label>Tipo</label>
+        <div class="chip-select" id="tipoAtencion">
+          <div class="opt on" data-tipo="ctrl" data-label="Control">Control</div>
+          <div class="opt" data-tipo="enf" data-label="Enfermedad">Enfermedad</div>
+          <div class="opt" data-tipo="vac" data-label="Vacuna">Vacuna</div>
+        </div>
+      </div>
+      <div class="form-inline">
+        <div class="form-row"><label>Título</label><input type="text" id="atTitulo" placeholder="Ej: Control de rutina"></div>
+        <div class="form-row"><label>Fecha</label><input type="date" id="atFecha"></div>
+      </div>
+      <div class="form-inline">
+        <div class="form-row"><label>Peso (opcional)</label><input type="text" id="atPeso" placeholder="Ej: 19,2 kg"></div>
+        <div class="form-row"><label>Talla (opcional)</label><input type="text" id="atTalla" placeholder="Ej: 112 cm"></div>
+      </div>
+      <div class="form-row"><label>Notas</label><textarea id="atTexto" placeholder="Lo que quieras dejar registrado sobre esta atención..."></textarea></div>
+      <div class="form-row form-inline" style="align-items:center;">
+        <label style="margin:0;display:flex;align-items:center;gap:10px;"><span class="switch"><input type="checkbox" id="atVisible" checked><span class="slider"></span></span> Visible para la familia</label>
+      </div>
+      <div class="form-actions">
+        <button class="btn-sm" id="cancelAtencion">Cancelar</button>
+        <button class="btn-sm primary" id="saveAtencion">Guardar atención</button>
+      </div>
+    </div>
+
+    <div id="pf-timeline"></div>
+  </div>
+</div>
+
+<!-- ================= PANEL: IMPORTAR ================= -->
+<div class="admin-panel" id="panel-importar">
+  <div class="page-title">Importar desde Quality</div>
+  <div class="page-sub">Pegás lo que copiás de Quality, vos confirmás lo que se guarda. Nada se importa sin que lo revises.</div>
+
+  <div class="segmented">
+    <button class="active" data-sub="historia">Historia clínica</button>
+    <button data-sub="controles">Próximos controles</button>
+  </div>
+
+  <!-- ---- Sub: Historia clínica ---- -->
+  <div class="import-subview active" id="import-historia">
+    <div class="editor-card">
+      <h3>1. Pegá la Historia Clínica del paciente</h3>
+      <div class="paste-hint">Entrá a la ficha del paciente en Quality, abrí cada control ("Hacer click para ver detalles"), seleccioná toda la página y pegala acá tal cual.</div>
+      <textarea class="paste-box" id="pasteHistoria">CONTROL 1 MES
+lun, 10 ago 2026 · Dr. NAVARRO PAULA
+General
+Observaciones Generales
+Control 1 mes
+
+Peso: 4,800 (60)
+Talla: 55 cm (58)
+PC: 37,5 cm (65)
+
+EF: Fontanela normotensa. Auscultación cardíaca normal. Abdomen blando, depresible, RHA normales.
+Madurativo: acorde, sigue con la mirada.
+Alimentación: pecho materno exclusivo. Buen progreso de peso.
+
+Control en 1 mes
+
+CONTROL DE SALUD 12 DIAS DE VIDA
+lun, 20 jul 2026 · Dr. NAVARRO PAULA
+General
+Observaciones Generales
+Control de salud a los 12 días
+
+Peso: 3,600 (48)
+Talla: 51 cm (50)
+PC: 35 cm (52)
+
+EF: Sin particularidades. Ictericia leve en resolución.
+Alimentación: pecho materno exclusivo, buena succión.
+
+Control al mes</textarea>
+      <div class="form-actions" style="margin-top:14px;">
+        <button class="btn-sm primary" id="btnProcesarHistoria">Procesar texto</button>
+      </div>
+    </div>
+
+    <div id="historiaResultsWrap" style="display:none;">
+      <h3 style="font-family:'Newsreader',serif;font-weight:500;font-size:1.05rem;margin-bottom:4px;">2. Revisá y confirmá cada control</h3>
+      <div class="paste-hint" style="margin-top:0;">Se detectaron <b id="historiaCount">0</b> registros. Corregí lo que haga falta antes de importar — sobre todo si un número no se leyó bien.</div>
+      <div id="historiaResults"></div>
+      <div class="form-actions">
+        <button class="btn-sm" id="btnCancelarHistoria">Descartar todo</button>
+        <button class="btn-sm primary" id="btnConfirmarHistoria">Confirmar e importar registros</button>
+      </div>
+      <div class="import-summary" id="historiaSummary"></div>
+    </div>
+  </div>
+
+  <!-- ---- Sub: Próximos controles ---- -->
+  <div class="import-subview" id="import-controles">
+    <div class="editor-card">
+      <h3>1. Pegá la tabla de "Mis Pacientes"</h3>
+      <div class="paste-hint">Esto solo actualiza próximos controles agendados — no confirma asistencia real, para eso usá Historia Clínica.</div>
+      <textarea class="paste-box" id="pasteControles" style="min-height:110px;">Mateo Gómez	5 años	lun, 15 ago 2026	mar, 14 oct 2026
+Delfina Gómez	2 años	lun, 3 ago 2026	mié, 2 sep 2026
+Lucía Ibáñez	3 años	lun, 20 jul 2026	Sin cita
+Tomás Herrera	8 meses	jue, 6 ago 2026	dom, 20 sep 2026</textarea>
+      <div class="form-actions" style="margin-top:14px;">
+        <button class="btn-sm primary" id="btnProcesarControles">Procesar texto</button>
+      </div>
+    </div>
+
+    <div id="controlesResultsWrap" style="display:none;">
+      <div class="list-card" style="padding-top:6px;">
+        <table class="import-table">
+          <thead><tr><th></th><th>Paciente</th><th>Edad</th><th>Última visita</th><th>Próxima cita</th></tr></thead>
+          <tbody id="controlesTableBody"></tbody>
+        </table>
+      </div>
+      <div class="form-actions">
+        <button class="btn-sm" id="btnCancelarControles">Descartar todo</button>
+        <button class="btn-sm primary" id="btnConfirmarControles">Confirmar e importar</button>
+      </div>
+      <div class="import-summary" id="controlesSummary"></div>
+    </div>
+  </div>
+</div>
+
+<!-- ================= PANEL: INDICACIONES ================= -->
+<div class="admin-panel" id="panel-indicaciones">
+  <div class="panel-cta">
+    <div><div class="page-title" style="margin-bottom:2px;">Indicaciones prácticas</div><div class="page-sub" style="margin-bottom:0;">Lo que las familias ven en su portal, tal cual lo escribas acá.</div></div>
+    <button class="btn-sm primary" id="btnNuevaIndicacion">+ Nueva indicación</button>
+  </div>
+
+  <div class="editor-card" id="editorIndicacion" style="display:none;">
+    <h3>Nueva indicación</h3>
+    <div class="form-row"><label>Categoría</label>
+      <div class="chip-select" id="catIndicacion">
+        <div class="opt on">Fiebre</div><div class="opt">Alimentación</div><div class="opt">Sueño</div><div class="opt">Golpes y accidentes</div><div class="opt">Piel</div>
+      </div>
+    </div>
+    <div class="form-row"><label>Título</label><input type="text" placeholder="Ej: Mi hijo tiene fiebre, ¿qué hago primero?"></div>
+    <div class="form-row"><label>Resumen corto (lo que se ve antes de abrir)</label><input type="text" placeholder="Una línea que resuma la indicación"></div>
+    <div class="form-row"><label>Texto completo</label><textarea placeholder="Escribí acá como se lo explicarías a una familia en la consulta..."></textarea></div>
+    <div class="form-row form-inline" style="align-items:center;">
+      <label style="margin:0;display:flex;align-items:center;gap:10px;"><span class="switch"><input type="checkbox" checked><span class="slider"></span></span> Publicar ya</label>
+    </div>
+    <div class="form-actions">
+      <button class="btn-sm" id="cancelIndicacion">Cancelar</button>
+      <button class="btn-sm primary" id="saveIndicacion">Guardar indicación</button>
+    </div>
+  </div>
+
+  <div class="list-card">
+    <div class="item-row">
+      <div class="titles"><span class="cat-badge">Fiebre</span><b>Mi hijo tiene fiebre, ¿qué hago primero?</b></div>
+      <div class="item-actions"><span class="status-badge pub">Publicado</span><span class="edit">Editar</span></div>
+    </div>
+    <div class="item-row">
+      <div class="titles"><span class="cat-badge">Golpes y accidentes</span><b>Se golpeó la cabeza — cuándo ir a la guardia</b></div>
+      <div class="item-actions"><span class="status-badge pub">Publicado</span><span class="edit">Editar</span></div>
+    </div>
+    <div class="item-row">
+      <div class="titles"><span class="cat-badge">Alimentación</span><b>"No quiere comer nada" — qué es esperable</b></div>
+      <div class="item-actions"><span class="status-badge pub">Publicado</span><span class="edit">Editar</span></div>
+    </div>
+    <div class="item-row">
+      <div class="titles"><span class="cat-badge">Sueño</span><b>Se despierta varias veces por noche</b></div>
+      <div class="item-actions"><span class="status-badge draft">Borrador</span><span class="edit">Editar</span></div>
+    </div>
+  </div>
+</div>
+
+<!-- ================= PANEL: ALERTAS ================= -->
+<div class="admin-panel" id="panel-alertas">
+  <div class="panel-cta">
+    <div><div class="page-title" style="margin-bottom:2px;">Alertas de temporada</div><div class="page-sub" style="margin-bottom:0;">Lo que aparece como aviso en el sitio público y el portal.</div></div>
+    <button class="btn-sm primary" id="btnNuevaAlerta">+ Nueva alerta</button>
+  </div>
+
+  <div class="editor-card" id="editorAlerta" style="display:none;">
+    <h3>Nueva alerta</h3>
+    <div class="form-row"><label>Título</label><input type="text" placeholder="Ej: Temporada de bronquiolitis"></div>
+    <div class="form-row"><label>Mensaje</label><textarea placeholder="Señales para consultar antes de esperar el turno..."></textarea></div>
+    <div class="form-inline">
+      <div class="form-row"><label>Vigente desde</label><input type="date"></div>
+      <div class="form-row"><label>Vigente hasta</label><input type="date"></div>
+    </div>
+    <div class="form-row form-inline" style="align-items:center;">
+      <label style="margin:0;display:flex;align-items:center;gap:10px;"><span class="switch"><input type="checkbox" checked><span class="slider"></span></span> Activa ahora</label>
+    </div>
+    <div class="form-actions">
+      <button class="btn-sm" id="cancelAlerta">Cancelar</button>
+      <button class="btn-sm primary" id="saveAlerta">Guardar alerta</button>
+    </div>
+  </div>
+
+  <div class="list-card">
+    <div class="item-row">
+      <div class="titles"><b>Temporada de bronquiolitis</b></div>
+      <div class="meta" style="flex:1;">Vigente hasta el 30 de septiembre</div>
+      <div class="item-actions"><label class="switch"><input type="checkbox" checked><span class="slider"></span></label><span class="edit">Editar</span></div>
+    </div>
+    <div class="item-row">
+      <div class="titles"><b>Circula gripe A en Yerba Buena</b></div>
+      <div class="meta" style="flex:1;">Vigente hasta el 15 de septiembre</div>
+      <div class="item-actions"><label class="switch"><input type="checkbox" checked><span class="slider"></span></label><span class="edit">Editar</span></div>
+    </div>
+    <div class="item-row">
+      <div class="titles"><b>Fichas de apto físico — inicio de clases</b></div>
+      <div class="meta" style="flex:1;">Se activa automáticamente en febrero</div>
+      <div class="item-actions"><label class="switch"><input type="checkbox"><span class="slider"></span></label><span class="edit">Editar</span></div>
+    </div>
+  </div>
+</div>
+
+<!-- ================= PANEL: AYUDA ================= -->
+<div class="admin-panel" id="panel-ayuda">
+  <div class="page-title">Guía rápida</div>
+  <div class="page-sub">Para vos, Paula — cómo usar cada parte sin perder tiempo.</div>
+
+  <div class="help-status">
+    <h3>Dónde está parado esto hoy</h3>
+    <p>Lo que estás viendo es una versión de prueba: los pacientes, turnos e indicaciones son ficticios. Todavía no está conectado a Quality ni tiene una base de datos real detrás — es para que lo toques, lo uses como si fuera real, y me cuentes qué cambiarías antes de que lo construyamos en serio. Nada de lo que cargues acá este fin de semana se guarda de forma permanente.</p>
+  </div>
+
+  <div class="help-index">
+    <a href="#help-pacientes">Pacientes</a>
+    <a href="#help-importar">Importar</a>
+    <a href="#help-indicaciones">Indicaciones</a>
+    <a href="#help-alertas">Alertas</a>
+    <a href="#help-estadisticas">Estadísticas</a>
+  </div>
+
+  <div class="help-card" id="help-pacientes">
+    <h3><span class="num">1</span>Pacientes</h3>
+    <p>Tu directorio de familias. La historia clínica de verdad la seguís cargando en Quality — esto es solo para ubicar rápido a alguien y ver su resumen.</p>
+    <ol>
+      <li>Usá los filtros rápidos ("Control esta semana", "Vacunas atrasadas") para ver quién necesita atención sin buscar uno por uno.</li>
+      <li>Tocá <b>Ver ficha</b> en cualquier paciente para ver su DNI, familia, próximo control y sus últimos registros.</li>
+      <li>Desde esa ficha, el botón <b>+ Nueva atención</b> te deja cargar un control a mano — sin pegar nada de Quality — para cuando querés sumar algo puntual ya mismo.</li>
+    </ol>
+  </div>
+
+  <div class="help-card" id="help-importar">
+    <h3><span class="num">2</span>Importar</h3>
+    <p>La forma de traer, en bloque, lo que ya escribiste en Quality — sin cargarlo dos veces.</p>
+    <ol>
+      <li><b>Historia clínica:</b> entrás a la ficha de un paciente en Quality, abrís cada control, seleccionás toda la página y la pegás acá. El sistema separa cada control con su fecha, peso, talla y percentil.</li>
+      <li><b>Próximos controles:</b> pegás la tabla de "Mis Pacientes" de Quality para actualizar de una las próximas citas de todos.</li>
+      <li>Nada se guarda solo — siempre revisás y confirmás antes de que se importe. Si algo se leyó mal, lo corregís ahí mismo.</li>
+    </ol>
+    <div class="help-note">Mientras no tengamos una conexión directa con Quality, este va a ser tu método principal de carga en bloque.</div>
+  </div>
+
+  <div class="help-card" id="help-indicaciones">
+    <h3><span class="num">3</span>Indicaciones</h3>
+    <p>Lo que las familias ven en su portal cuando tienen una duda frecuente (fiebre, golpes, alimentación...).</p>
+    <ol>
+      <li>Tocá <b>+ Nueva indicación</b>, elegí la categoría, escribí el título y el texto tal como se lo explicarías a una familia.</li>
+      <li>Podés dejarla como borrador si todavía no está lista, o publicarla directo.</li>
+    </ol>
+  </div>
+
+  <div class="help-card" id="help-alertas">
+    <h3><span class="num">4</span>Alertas</h3>
+    <p>Los avisos de temporada que aparecen en el sitio público y el portal (bronquiolitis, gripe, etc.).</p>
+    <ol>
+      <li><b>+ Nueva alerta</b> para cargar un aviso nuevo, con fecha de vigencia.</li>
+      <li>El interruptor de cada fila la prende o apaga sin tener que editarla.</li>
+    </ol>
+  </div>
+
+  <div class="help-card" id="help-estadisticas">
+    <h3><span class="num">5</span>Estadísticas</h3>
+    <p>Una foto de tus pacientes, cruzando edad, sexo y diagnóstico.</p>
+    <ol>
+      <li>El período de arriba (por defecto "Este mes") afecta los tres números de resumen.</li>
+      <li>Los filtros de abajo son de selección múltiple — podés tildar varias edades o diagnósticos a la vez.</li>
+      <li>El buscador de más abajo te lleva a las estadísticas de un paciente puntual.</li>
+    </ol>
+  </div>
+</div>
+
+</div><!-- /wrap content -->
+
+<script>
+  /* ---------- navegación entre paneles del panel de Paula ---------- */
+  document.querySelectorAll('.tabs-top a').forEach(link=>{
+    link.addEventListener('click', (e)=>{
+      e.preventDefault();
+      document.querySelectorAll('.tabs-top a').forEach(l=>l.classList.remove('active'));
+      document.querySelectorAll('.admin-panel').forEach(p=>p.classList.remove('active'));
+      link.classList.add('active');
+      document.getElementById('panel-'+link.dataset.tab).classList.add('active');
+      window.scrollTo({top:0, behavior:'smooth'});
+    });
+  });
+
+  /* ---------- dropdowns genéricos (abrir/cerrar, uno a la vez) ---------- */
+  document.querySelectorAll('.dd-btn').forEach(btn=>{
+    btn.addEventListener('click', (e)=>{
+      e.stopPropagation();
+      const dd = btn.closest('.dd');
+      const wasOpen = dd.classList.contains('open');
+      document.querySelectorAll('.dd.open').forEach(d=>d.classList.remove('open'));
+      if(!wasOpen) dd.classList.add('open');
+    });
+  });
+  document.addEventListener('click', ()=> document.querySelectorAll('.dd.open').forEach(d=>d.classList.remove('open')));
+
+  /* ---------- período (single-select, afecta las métricas de arriba) ---------- */
+  const periodBtn = document.getElementById('periodBtn');
+  const periodCustom = document.getElementById('periodCustom');
+  document.querySelectorAll('#ddPeriod .dd-opt').forEach(opt=>{
+    opt.addEventListener('click', ()=>{
+      document.querySelectorAll('#ddPeriod .dd-opt').forEach(o=>o.classList.remove('sel'));
+      opt.classList.add('sel');
+      const label = opt.dataset.period;
+      if(label === 'Elegir fechas'){
+        periodBtn.childNodes[0].textContent = 'Elegir fechas ';
+        periodCustom.classList.add('show');
+      } else {
+        periodBtn.childNodes[0].textContent = label + ' ';
+        periodCustom.classList.remove('show');
+      }
+      document.getElementById('ddPeriod').classList.remove('open');
+      // demo: los valores de las métricas cambiarían según el período elegido
+    });
+  });
+
+  /* ---------- filtros de pacientes — multi-select (Edad, Sexo, Diagnóstico) ---------- */
+  const activeFilters = document.getElementById('activeFilters');
+  const selected = { Edad: new Set(), Sexo: new Set(), Diagnóstico: new Set() };
+  const ddIds = { Edad:'ddEdad', Sexo:'ddSexo', Diagnóstico:'ddDiag' };
+
+  function updateFilterButton(group){
+    const dd = document.getElementById(ddIds[group]);
+    const btn = dd.querySelector('.dd-btn');
+    const n = selected[group].size;
+    btn.childNodes[0].textContent = n ? `${group} (${n}) ` : `${group} `;
+    btn.classList.toggle('set', n > 0);
+  }
+
+  function renderActiveFilters(){
+    let chips = [];
+    Object.entries(selected).forEach(([group, set])=>{
+      set.forEach(val=> chips.push({group, val}));
+    });
+    activeFilters.innerHTML = chips.map(c=>`
+      <div class="af-chip">${c.group}: ${c.val}<button data-group="${c.group}" data-val="${c.val}">✕</button></div>
+    `).join('');
+    activeFilters.querySelectorAll('button').forEach(b=>{
+      b.addEventListener('click', ()=>{
+        const group = b.dataset.group, val = b.dataset.val;
+        selected[group].delete(val);
+        document.querySelector(`.dd-opt[data-group="${group}"][data-val="${val}"]`).classList.remove('sel');
+        updateFilterButton(group);
+        renderActiveFilters();
+      });
+    });
+  }
+
+  document.querySelectorAll('#ddEdad .dd-opt, #ddSexo .dd-opt, #ddDiag .dd-opt').forEach(opt=>{
+    opt.addEventListener('click', (e)=>{
+      e.stopPropagation();
+      const group = opt.dataset.group, val = opt.dataset.val;
+      if(selected[group].has(val)){ selected[group].delete(val); opt.classList.remove('sel'); }
+      else { selected[group].add(val); opt.classList.add('sel'); }
+      updateFilterButton(group);
+      renderActiveFilters();
+    });
+  });
+
+  document.getElementById('clearFilters').addEventListener('click', ()=>{
+    Object.keys(selected).forEach(group=>{
+      selected[group].clear();
+      updateFilterButton(group);
+    });
+    document.querySelectorAll('.filterbar .dd-opt.sel').forEach(o=>o.classList.remove('sel'));
+    renderActiveFilters();
+  });
+
+  document.getElementById('openDrilldown').addEventListener('click', ()=>{
+    document.getElementById('drilldown').style.display='block';
+    document.getElementById('drilldown').scrollIntoView({behavior:'smooth', block:'nearest'});
+  });
+  document.getElementById('closeDrilldown').addEventListener('click', ()=>{
+    document.getElementById('drilldown').style.display='none';
+  });
+
+  /* ---------- quick filters (Pacientes) ---------- */
+  document.querySelectorAll('.quick-filters .qf-chip').forEach(chip=>{
+    chip.addEventListener('click', ()=>{
+      document.querySelectorAll('.quick-filters .qf-chip').forEach(c=>c.classList.remove('on'));
+      chip.classList.add('on');
+    });
+  });
+
+  /* ---------- ficha rápida de paciente ---------- */
+  const pacientesDemo = {
+    mateo: { nombre:'Mateo Gómez', dni:'71056452', familia:'Familia Demo', proximo:'14 de octubre', timeline:[
+      {tipo:'ctrl', label:'Control', titulo:'Control de rutina', fecha:'15 ago 2026'},
+      {tipo:'enf', label:'Enfermedad', titulo:'Bronquiolitis', fecha:'2–10 jul 2026'},
+      {tipo:'vac', label:'Vacuna', titulo:'Antigripal', fecha:'10 jun 2026'},
+    ]},
+    delfina: { nombre:'Delfina Gómez', dni:'72340981', familia:'Familia Demo', proximo:'2 de septiembre', timeline:[
+      {tipo:'ctrl', label:'Control', titulo:'Control de rutina', fecha:'3 ago 2026'},
+      {tipo:'vac', label:'Vacuna', titulo:'Refuerzo triple viral', fecha:'3 ago 2026'},
+    ]},
+    lucia: { nombre:'Lucía Ibáñez', dni:'70981234', familia:'Familia Ibáñez', proximo:'sin agendar', timeline:[
+      {tipo:'ctrl', label:'Control', titulo:'Control de rutina', fecha:'20 jul 2026'},
+      {tipo:'enf', label:'Enfermedad', titulo:'Otitis media', fecha:'5 jun 2026'},
+    ]},
+    tomas: { nombre:'Tomás Herrera', dni:'73102456', familia:'Familia Herrera', proximo:'20 de septiembre', timeline:[
+      {tipo:'ctrl', label:'Control', titulo:'Control de rutina 8 meses', fecha:'6 ago 2026'},
+      {tipo:'vac', label:'Vacuna', titulo:'Cuádruple, 2da dosis', fecha:'6 ago 2026'},
+    ]},
+  };
+
+  let currentPatientKey = null;
+
+  function renderPfTimeline(p){
+    document.getElementById('pf-timeline').innerHTML = p.timeline.map(t=>`
+      <div class="item-row">
+        <div class="titles"><span class="status-badge ${t.tipo}">${t.label}</span><b>${t.titulo}</b></div>
+        <div class="meta" style="flex:1;">${t.fecha}${t.peso?' · Peso '+t.peso:''}${t.talla?' · Talla '+t.talla:''}</div>
+      </div>
+    `).join('');
+  }
+
+  document.querySelectorAll('.ver-ficha').forEach(el=>{
+    el.addEventListener('click', ()=>{
+      const p = pacientesDemo[el.dataset.patient];
+      if(!p) return;
+      currentPatientKey = el.dataset.patient;
+      document.getElementById('pf-nombre').textContent = p.nombre;
+      document.getElementById('pf-dni').textContent = p.dni;
+      document.getElementById('pf-familia').textContent = p.familia;
+      document.getElementById('pf-proximo').textContent = p.proximo;
+      renderPfTimeline(p);
+      document.getElementById('formNuevaAtencion').style.display = 'none';
+      const ficha = document.getElementById('patientFicha');
+      ficha.style.display = 'block';
+      ficha.scrollIntoView({behavior:'smooth', block:'nearest'});
+    });
+  });
+  document.getElementById('closeFicha').addEventListener('click', ()=>{
+    document.getElementById('patientFicha').style.display = 'none';
+  });
+
+  /* ---------- nueva atención manual, en paralelo al pegado ---------- */
+  document.getElementById('btnNuevaAtencion').addEventListener('click', ()=>{
+    const form = document.getElementById('formNuevaAtencion');
+    form.style.display = form.style.display === 'none' ? 'block' : 'none';
+    if(form.style.display === 'block'){
+      document.getElementById('atFecha').value = new Date().toISOString().slice(0,10);
+      form.scrollIntoView({behavior:'smooth', block:'nearest'});
+    }
+  });
+  document.querySelectorAll('#tipoAtencion .opt').forEach(opt=>{
+    opt.addEventListener('click', ()=>{
+      document.querySelectorAll('#tipoAtencion .opt').forEach(o=>o.classList.remove('on'));
+      opt.classList.add('on');
+    });
+  });
+  document.getElementById('cancelAtencion').addEventListener('click', ()=>{
+    document.getElementById('formNuevaAtencion').style.display = 'none';
+  });
+  document.getElementById('saveAtencion').addEventListener('click', ()=>{
+    if(!currentPatientKey) return;
+    const p = pacientesDemo[currentPatientKey];
+    const tipoOpt = document.querySelector('#tipoAtencion .opt.on');
+    const titulo = document.getElementById('atTitulo').value.trim();
+    if(!titulo){
+      document.getElementById('atTitulo').style.borderColor = 'var(--terracota)';
+      return;
+    }
+    const fechaISO = document.getElementById('atFecha').value;
+    const fechaDisplay = fechaISO ? new Date(fechaISO+'T00:00:00').toLocaleDateString('es-AR',{day:'2-digit',month:'short',year:'numeric'}) : '';
+    p.timeline.unshift({
+      tipo: tipoOpt.dataset.tipo,
+      label: tipoOpt.dataset.label,
+      titulo: titulo,
+      fecha: fechaDisplay,
+      peso: document.getElementById('atPeso').value.trim(),
+      talla: document.getElementById('atTalla').value.trim(),
+    });
+    renderPfTimeline(p);
+    document.getElementById('formNuevaAtencion').style.display = 'none';
+    document.getElementById('atTitulo').value = '';
+    document.getElementById('atTitulo').style.borderColor = '';
+    document.getElementById('atPeso').value = '';
+    document.getElementById('atTalla').value = '';
+    document.getElementById('atTexto').value = '';
+  });
+
+  /* ---------- Importar: segmentado historia / controles ---------- */
+  document.querySelectorAll('#panel-importar .segmented button').forEach(btn=>{
+    btn.addEventListener('click', ()=>{
+      document.querySelectorAll('#panel-importar .segmented button').forEach(b=>b.classList.remove('active'));
+      document.querySelectorAll('.import-subview').forEach(v=>v.classList.remove('active'));
+      btn.classList.add('active');
+      document.getElementById('import-'+btn.dataset.sub).classList.add('active');
+    });
+  });
+
+  /* ---------- parser: fecha en español -> ISO ---------- */
+  function parseFechaToISO(text){
+    const meses = {ene:'01',feb:'02',mar:'03',abr:'04',may:'05',jun:'06',jul:'07',ago:'08',sep:'09',oct:'10',nov:'11',dic:'12'};
+    const m = text.match(/(\d{1,2})\s+([a-záéíóúA-ZÁÉÍÓÚ]{3,4})[a-záéíóúA-ZÁÉÍÓÚ]*\.?\s+(\d{4})/);
+    if(!m) return '';
+    const day = m[1].padStart(2,'0');
+    const monKey = m[2].toLowerCase().slice(0,3);
+    const mon = meses[monKey] || '01';
+    return `${m[3]}-${mon}-${day}`;
+  }
+
+  /* ---------- parser: Historia Clínica pegada -> registros estructurados ---------- */
+  function parseHistoriaClinica(raw){
+    const lines = raw.split('\n').map(l=>l.trim());
+    const titleRegex = /^[A-ZÁÉÍÓÚÑ0-9][A-ZÁÉÍÓÚÑ0-9 ,.'-]{3,60}$/;
+    const dateRegex = /\d{1,2}\s+[a-záéíóúA-ZÁÉÍÓÚ]{3,4}\.?\s+\d{4}/;
+    const blocks = [];
+    let currentTitle=null, currentDateLine=null, contentLines=[];
+    for(let i=0;i<lines.length;i++){
+      const line = lines[i];
+      if(titleRegex.test(line) && i+1<lines.length && dateRegex.test(lines[i+1])){
+        if(currentTitle) blocks.push({titulo:currentTitle, fechaLinea:currentDateLine, texto:contentLines.join('\n').trim()});
+        currentTitle = line; currentDateLine = lines[i+1]; contentLines = []; i++;
+      } else if(currentTitle && line !== ''){
+        contentLines.push(line);
+      }
+    }
+    if(currentTitle) blocks.push({titulo:currentTitle, fechaLinea:currentDateLine, texto:contentLines.join('\n').trim()});
+
+    return blocks.map((b,idx)=>{
+      const pesoM = b.texto.match(/Peso:\s*([\d.,]+)\s*(?:kg)?\s*\(?(\d+)?\)?/i);
+      const tallaM = b.texto.match(/Talla:\s*([\d.,]+)\s*cm\s*\(?(\d+)?\)?/i);
+      const pcM = b.texto.match(/PC:\s*([\d.,]+)\s*cm\s*\(?(\d+)?\)?/i);
+      return {
+        id: 'h'+idx,
+        titulo: b.titulo.charAt(0) + b.titulo.slice(1).toLowerCase(),
+        fechaISO: parseFechaToISO(b.fechaLinea),
+        peso: pesoM ? pesoM[1] : '', pesoPct: (pesoM && pesoM[2]) ? pesoM[2] : '',
+        talla: tallaM ? tallaM[1] : '', tallaPct: (tallaM && tallaM[2]) ? tallaM[2] : '',
+        pc: pcM ? pcM[1] : '', pcPct: (pcM && pcM[2]) ? pcM[2] : '',
+        texto: b.texto
+      };
+    });
+  }
+
+  let historiaRecords = [];
+
+  function renderHistoriaResults(){
+    document.getElementById('historiaCount').textContent = historiaRecords.length;
+    document.getElementById('historiaResults').innerHTML = historiaRecords.map(r=>`
+      <div class="parsed-card" data-id="${r.id}">
+        <div class="parsed-head">
+          <input type="text" value="${r.titulo}" data-field="titulo">
+          <input type="date" value="${r.fechaISO}" data-field="fecha">
+        </div>
+        <div class="extracted-row">
+          <div class="extracted-field ${r.peso?'':'empty'}"><span>Peso</span><input type="text" value="${r.peso}" placeholder="—" data-field="peso"></div>
+          <div class="extracted-field ${r.talla?'':'empty'}"><span>Talla</span><input type="text" value="${r.talla}" placeholder="—" data-field="talla"></div>
+          <div class="extracted-field ${r.pc?'':'empty'}"><span>PC</span><input type="text" value="${r.pc}" placeholder="—" data-field="pc"></div>
+          <div class="extracted-field ${r.pesoPct?'':'empty'}"><span>Pctl. peso</span><input type="text" value="${r.pesoPct}" placeholder="—" data-field="pesoPct"></div>
+        </div>
+        <textarea class="parsed-text" data-field="texto">${r.texto}</textarea>
+        <div class="parsed-foot">
+          <label><input type="checkbox" checked data-field="visible"> Visible para la familia</label>
+          <span class="discard-link" data-discard="${r.id}">Descartar este registro</span>
+        </div>
+      </div>
+    `).join('');
+    document.querySelectorAll('#historiaResults [data-discard]').forEach(el=>{
+      el.addEventListener('click', ()=>{
+        historiaRecords = historiaRecords.filter(r=>r.id !== el.dataset.discard);
+        renderHistoriaResults();
+      });
+    });
+  }
+
+  document.getElementById('btnProcesarHistoria').addEventListener('click', ()=>{
+    const raw = document.getElementById('pasteHistoria').value;
+    historiaRecords = parseHistoriaClinica(raw);
+    document.getElementById('historiaResultsWrap').style.display = historiaRecords.length ? 'block' : 'none';
+    document.getElementById('historiaSummary').classList.remove('show');
+    renderHistoriaResults();
+  });
+
+  document.getElementById('btnCancelarHistoria').addEventListener('click', ()=>{
+    historiaRecords = [];
+    document.getElementById('historiaResultsWrap').style.display = 'none';
+    document.getElementById('pasteHistoria').value = '';
+  });
+
+  document.getElementById('btnConfirmarHistoria').addEventListener('click', ()=>{
+    const n = historiaRecords.length;
+    const s = document.getElementById('historiaSummary');
+    s.textContent = `${n} registro${n===1?'':'s'} importado${n===1?'':'s'} al timeline del paciente. Ya podés verlos en su ficha.`;
+    s.classList.add('show');
+  });
+
+  /* ---------- parser: tabla de "Mis Pacientes" pegada ---------- */
+  function parseProximosControles(raw){
+    return raw.split('\n').map(l=>l.trim()).filter(Boolean).map(line=>{
+      let cols = line.split('\t');
+      if(cols.length < 3) cols = line.split(/\s{2,}/);
+      return { paciente: cols[0]||'', edad: cols[1]||'', ultimaVisita: cols[2]||'', proximaCita: cols[3]||'' };
+    });
+  }
+
+  let controlesRows = [];
+
+  function renderControlesResults(){
+    document.getElementById('controlesTableBody').innerHTML = controlesRows.map((r,i)=>`
+      <tr>
+        <td><input type="checkbox" checked data-row="${i}"></td>
+        <td>${r.paciente}</td>
+        <td>${r.edad}</td>
+        <td>${r.ultimaVisita}</td>
+        <td>${r.proximaCita}</td>
+      </tr>
+    `).join('');
+  }
+
+  document.getElementById('btnProcesarControles').addEventListener('click', ()=>{
+    const raw = document.getElementById('pasteControles').value;
+    controlesRows = parseProximosControles(raw);
+    document.getElementById('controlesResultsWrap').style.display = controlesRows.length ? 'block' : 'none';
+    document.getElementById('controlesSummary').classList.remove('show');
+    renderControlesResults();
+  });
+
+  document.getElementById('btnCancelarControles').addEventListener('click', ()=>{
+    controlesRows = [];
+    document.getElementById('controlesResultsWrap').style.display = 'none';
+    document.getElementById('pasteControles').value = '';
+  });
+
+  document.getElementById('btnConfirmarControles').addEventListener('click', ()=>{
+    const checked = document.querySelectorAll('#controlesTableBody input[type=checkbox]:checked').length;
+    const s = document.getElementById('controlesSummary');
+    s.textContent = `Próximos controles actualizados para ${checked} paciente${checked===1?'':'s'}.`;
+    s.classList.add('show');
+  });
+
+  /* ---------- editor de Indicaciones ---------- */
+  document.getElementById('btnNuevaIndicacion').addEventListener('click', ()=>{
+    document.getElementById('editorIndicacion').style.display='block';
+  });
+  document.getElementById('cancelIndicacion').addEventListener('click', ()=>{
+    document.getElementById('editorIndicacion').style.display='none';
+  });
+  document.getElementById('saveIndicacion').addEventListener('click', ()=>{
+    document.getElementById('editorIndicacion').style.display='none'; // demo: acá se guardaría de verdad
+  });
+  document.querySelectorAll('#catIndicacion .opt').forEach(opt=>{
+    opt.addEventListener('click', ()=>{
+      document.querySelectorAll('#catIndicacion .opt').forEach(o=>o.classList.remove('on'));
+      opt.classList.add('on');
+    });
+  });
+
+  /* ---------- editor de Alertas ---------- */
+  document.getElementById('btnNuevaAlerta').addEventListener('click', ()=>{
+    document.getElementById('editorAlerta').style.display='block';
+  });
+  document.getElementById('cancelAlerta').addEventListener('click', ()=>{
+    document.getElementById('editorAlerta').style.display='none';
+  });
+  document.getElementById('saveAlerta').addEventListener('click', ()=>{
+    document.getElementById('editorAlerta').style.display='none';
+  });
+</script>
+
+</body>
+</html>
